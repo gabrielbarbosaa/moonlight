@@ -1,8 +1,19 @@
-import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import type { Request } from 'express';
 import { AuthenticatedRequest, SessionGuard } from '../auth/session.guard';
 import { SESSION_COOKIE } from '../auth/session.service';
-import { CreateTenantDto, SlugParamDto, SlugQueryDto } from './tenants.dto';
+import { CreateReportDto, CreateTenantDto, SlugParamDto, SlugQueryDto } from './tenants.dto';
 import { TenantsService } from './tenants.service';
 
 @ApiTags('tenants')
@@ -30,6 +41,13 @@ export class TenantsController {
   @ApiOperation({ summary: 'Informa se um endereço (slug) está livre' })
   slugAvailable(@Query() query: SlugQueryDto) {
     return this.tenants.isSlugAvailable(query.slug);
+  }
+
+  @Post('public/:slug/report')
+  @HttpCode(204)
+  @ApiOperation({ summary: 'Denuncia uma página pública' })
+  async report(@Param() params: SlugParamDto, @Body() body: CreateReportDto, @Req() req: Request) {
+    await this.tenants.report(params.slug, body, req.ip ?? 'unknown');
   }
 
   @Get('public/:slug')

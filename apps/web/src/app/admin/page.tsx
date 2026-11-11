@@ -64,11 +64,34 @@ export default function AdminPage() {
   return (
     <main style={mainStyle}>
       <h1>Painel</h1>
-      <p>Logado como {me.data.email}.</p>
+      <p>
+        Logado como {me.data.email}.
+        {me.data.role === 'SUPERADMIN' && (
+          <>
+            {' '}
+            <a href="/admin/backoffice">Backoffice</a>
+          </>
+        )}
+      </p>
 
       {tenant ? (
         <section>
           <h2>{tenant.name}</h2>
+          {tenant.status === 'SUSPENDED' && (
+            <p
+              role="alert"
+              style={{
+                border: '1px solid #b00020',
+                color: '#b00020',
+                padding: 12,
+                borderRadius: 8,
+              }}
+            >
+              Sua página está suspensa e não aparece publicamente.
+              {tenant.suspendedReason ? ` Motivo: ${tenant.suspendedReason}.` : ''} Entre em contato
+              com o suporte para contestar.
+            </p>
+          )}
           <p>
             Sua página:{' '}
             <a href={`${protocol}//${tenant.slug}.${ROOT_DOMAIN}`} target="_blank" rel="noreferrer">

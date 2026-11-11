@@ -13,6 +13,7 @@ const MAX_CODE_ATTEMPTS = 5;
 @Injectable()
 export class AuthService {
   private readonly secret: string;
+  private readonly superadminEmails: Set<string>;
   private dummyHash?: Promise<string>;
 
   constructor(
@@ -22,6 +23,13 @@ export class AuthService {
     config: ConfigService,
   ) {
     this.secret = config.getOrThrow<string>('SESSION_SECRET');
+    this.superadminEmails = new Set(
+      config
+        .get<string>('SUPERADMIN_EMAILS', '')
+        .split(',')
+        .map((email) => email.trim().toLowerCase())
+        .filter(Boolean),
+    );
   }
 
   async register(input: RegisterInput) {
@@ -75,10 +83,13 @@ export class AuthService {
     });
     if (consumed.count === 0) throw new UnauthorizedException('Código inválido ou expirado');
 
-    await this.prisma.user.update({
+    const user = await this.prisma.user.update({
       where: { id: record.userId },
       data: { emailVerified: true },
     });
+    if (user.role !== 'SUPERADMIN' && this.superadminEmails.has(user.email)) {
+      await this.prisma.user.update({ where: { id: user.id }, data: { role: 'SUPERADMIN' } });
+    }
 
     const sessionToken = await this.sessions.create(record.userId);
     return { userId: record.userId, sessionToken };

@@ -1,6 +1,11 @@
 import axios, { isAxiosError } from 'axios';
 import type {
   AnalyticsSummary,
+  BackofficeAuditEntry,
+  BackofficeReport,
+  BackofficeStats,
+  BackofficeTenant,
+  Paginated,
   CreateTenantInput,
   PageContent,
   LoginInput,
@@ -36,6 +41,7 @@ export type Tenant = {
   slug: string;
   name: string;
   status: 'ACTIVE' | 'SUSPENDED';
+  suspendedReason: string | null;
   createdAt: string;
 };
 
@@ -46,6 +52,21 @@ export const tenantsApi = {
     api
       .get<{ slug: string; available: boolean }>('/tenants/slug-available', { params: { slug } })
       .then((res) => res.data),
+};
+
+export const backofficeApi = {
+  stats: () => api.get<BackofficeStats>('/backoffice/stats').then((res) => res.data),
+  tenants: (params: { search?: string; status?: 'ACTIVE' | 'SUSPENDED'; page?: number }) =>
+    api.get<Paginated<BackofficeTenant>>('/backoffice/tenants', { params }).then((res) => res.data),
+  suspend: (id: string, reason: string) =>
+    api.post(`/backoffice/tenants/${id}/suspend`, { reason }).then(() => undefined),
+  reactivate: (id: string) =>
+    api.post(`/backoffice/tenants/${id}/reactivate`).then(() => undefined),
+  reports: (params: { status?: 'OPEN' | 'RESOLVED' | 'DISMISSED'; page?: number }) =>
+    api.get<Paginated<BackofficeReport>>('/backoffice/reports', { params }).then((res) => res.data),
+  resolveReport: (id: string, input: { action: 'dismiss' | 'suspend'; note?: string }) =>
+    api.post(`/backoffice/reports/${id}/resolve`, input).then(() => undefined),
+  audit: () => api.get<BackofficeAuditEntry[]>('/backoffice/audit').then((res) => res.data),
 };
 
 export const analyticsApi = {

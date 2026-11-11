@@ -6,6 +6,8 @@ import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { AppModule } from './app.module';
 import { SESSION_COOKIE } from './auth/session.service';
 
+const PUBLIC_TENANT_PATHS = /^\/(analytics\/track|tenants\/public\/[^/]+\/report)$/;
+
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
@@ -25,7 +27,7 @@ async function bootstrap() {
 
   app.enableCors((req: { originalUrl: string; headers: { origin?: string } }, callback) => {
     const path = req.originalUrl.split('?')[0];
-    if (path === '/analytics/track' && isTenantOrigin(req.headers.origin)) {
+    if (PUBLIC_TENANT_PATHS.test(path) && isTenantOrigin(req.headers.origin)) {
       callback(null, { origin: true, credentials: false, methods: ['POST', 'OPTIONS'] });
       return;
     }

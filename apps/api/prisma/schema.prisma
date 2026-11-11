@@ -28,6 +28,7 @@ model User {
 
   tenants       Tenant[]
   authCodes     AuthCode[]
+  auditLogs     AuditLog[]
 
   @@map("users")
 }
@@ -53,6 +54,8 @@ model Tenant {
   slug      String       @unique
   name      String
   status    TenantStatus @default(ACTIVE)
+  suspendedReason String?
+  suspendedAt     DateTime?
   ownerId   String       @db.Uuid
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
@@ -60,9 +63,51 @@ model Tenant {
   owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   page      Page?
   analytics AnalyticsDaily[]
+  reports   TenantReport[]
 
   @@index([ownerId])
+  @@index([status])
   @@map("tenants")
+}
+
+enum ReportStatus {
+  OPEN
+  RESOLVED
+  DISMISSED
+}
+
+/// Denúncia feita por um visitante contra uma página pública.
+model TenantReport {
+  id           String       @id @default(uuid()) @db.Uuid
+  tenantId     String       @db.Uuid
+  reason       String
+  details      String?
+  status       ReportStatus @default(OPEN)
+  resolvedAt   DateTime?
+  resolvedById String?      @db.Uuid
+  createdAt    DateTime     @default(now())
+
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([status, createdAt])
+  @@index([tenantId])
+  @@map("tenant_reports")
+}
+
+/// Registro de ações administrativas (suspensões, reativações, denúncias).
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @db.Uuid
+  action     String
+  targetType String
+  targetId   String
+  metadata   Json     @default("{}")
+  createdAt  DateTime @default(now())
+
+  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+  @@map("audit_logs")
 }
 
 /// Agregado diário (UTC) de visitas e cliques, consolidado a partir do Redis.
