@@ -1,0 +1,16 @@
+.git
+.husky
+.turbo
+.env
+.env.*
+!.env.example
+**/node_modules
+**/.next
+**/dist
+**/*.tsbuildinfo
+apps/web/*
+!apps/web/package.json
+packages/renderer/*
+!packages/renderer/package.json
+deploy
+README.md

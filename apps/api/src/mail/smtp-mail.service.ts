@@ -10,10 +10,13 @@ export class SmtpMailService extends MailPort {
 
   constructor(config: ConfigService) {
     super();
+    const user = config.get<string>('SMTP_USER');
+    const pass = config.get<string>('SMTP_PASS');
     this.transporter = createTransport({
       host: config.get<string>('SMTP_HOST', 'localhost'),
       port: Number(config.get('SMTP_PORT', 1026)),
-      secure: false,
+      secure: config.get<string>('SMTP_SECURE') === 'true',
+      auth: user && pass ? { user, pass } : undefined,
     });
     this.from = config.get<string>('MAIL_FROM', 'SiteBuilder <no-reply@sitebuilder.local>');
   }

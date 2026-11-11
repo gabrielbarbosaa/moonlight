@@ -67,6 +67,10 @@ Plans are code, not data: `packages/schemas/src/plans.ts` (`PLANS`, `entitlement
 
 `RateLimitService` (Redis counters, `rl:*` keys) backs `@RateLimit({ name, limit, windowSeconds, perEmail? })` + `RateLimitGuard` (`apps/api/src/redis/rate-limit.guard.ts`), applied to `/auth/register` (5/h per IP), `/auth/login` (10 per 15 min per IP, 5 per 15 min per email) and `/auth/verify` (15 per 15 min per IP); it answers 429 with `Retry-After`. The guard runs before body validation, so the email it reads is normalized by the guard itself. IPs come from `req.ip`; set `TRUST_PROXY` (number of proxy hops) only when the API really sits behind a reverse proxy, otherwise `X-Forwarded-For` is ignored on purpose so it cannot be forged to dodge the limits. Other limits (tracking, reports, booking) call `RateLimitService.allow` directly.
 
+### Deployment
+
+API on a VPS, web on Vercel (README in `deploy/`). `apps/api/Dockerfile` is built with the repo root as context (multi-stage: full install and build, then a clean `--prod` install plus `prisma generate`; `prisma` is a runtime dependency because the container runs `prisma migrate deploy` before starting, see `start:prod`). `deploy/docker-compose.yml` runs `caddy` (TLS, only exposed ports), `api`, `postgres` and `redis` with variables from `deploy/.env` (copy of `deploy/.env.production.example`, never committed). With `NODE_ENV=production` the API refuses to start if `SESSION_SECRET` or `BILLING_WEBHOOK_SECRET` is shorter than 32 chars or an example value, Swagger is off, and the billing sandbox endpoints answer 404 unless `BILLING_SANDBOX_ENABLED=true`. SMTP supports `SMTP_USER`/`SMTP_PASS`/`SMTP_SECURE`. The web deploy config is `apps/web/vercel.json` (installs and builds from the monorepo root with Turbo); web and API must share the same root domain so the host-only session cookie works.
+
 ### API validation and docs
 
 Request bodies are validated by a global `ZodValidationPipe` from `nestjs-zod`. DTOs are built with `createZodDto(schema)` from the shared schemas (see `apps/api/src/auth/auth.dto.ts`), which also feeds Swagger. Swagger UI is served at `/docs` outside production.

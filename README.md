@@ -49,6 +49,10 @@ Endereços úteis:
 - Mailpit (e-mails do 2FA): http://localhost:8026
 - Console do MinIO: http://localhost:9001
 
+## Deploy
+
+A API roda numa VPS com Docker (Caddy, API, Postgres e Redis) e o front na Vercel. O passo a passo, as variáveis e a operação (atualização, backup) estão em [`deploy/README.md`](deploy/README.md).
+
 ## Qualidade sem CI
 
 Não há pipeline na nuvem por enquanto. A verificação é local:

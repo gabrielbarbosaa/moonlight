@@ -98,6 +98,7 @@ export class BillingController {
   }
 
   private ensureSandbox() {
-    if (process.env.NODE_ENV === 'production') throw new NotFoundException();
+    const production = process.env.NODE_ENV === 'production';
+    if (production && process.env.BILLING_SANDBOX_ENABLED !== 'true') throw new NotFoundException();
   }
 }

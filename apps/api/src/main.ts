@@ -10,7 +10,24 @@ import { SESSION_COOKIE } from './auth/session.service';
 const PUBLIC_TENANT_PATHS =
   /^\/(analytics\/track|tenants\/public\/[^/]+\/report|booking\/public\/[^/]+(\/slots|\/book)?)$/;
 
+const WEAK_SECRETS = new Set(['troque-este-valor-em-dev', 'changeme', 'secret']);
+
+function assertProductionSecrets() {
+  if (process.env.NODE_ENV !== 'production') return;
+  const required = ['SESSION_SECRET', 'BILLING_WEBHOOK_SECRET'] as const;
+  for (const name of required) {
+    const value = process.env[name] ?? '';
+    if (value.length < 32 || WEAK_SECRETS.has(value)) {
+      throw new Error(
+        `${name} precisa ter ao menos 32 caracteres e não pode ser o valor de exemplo`,
+      );
+    }
+  }
+}
+
 async function bootstrap() {
+  assertProductionSecrets();
+
   const app = await NestFactory.create<NestExpressApplication>(AppModule, { rawBody: true });
 
   const trustProxy = process.env.TRUST_PROXY;
