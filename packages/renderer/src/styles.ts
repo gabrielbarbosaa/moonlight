@@ -112,7 +112,7 @@ export const RENDERER_STYLES = `
 .sbp-gallery-grid li{min-width:0}
 .sbp-gallery-grid a{display:block}
 .sbp-gallery-grid img{display:block;width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--sb-radius)}
-.sbp-gallery[data-variant="columns"] .sbp-gallery-grid{display:block;column-width:150px;column-gap:10px}
+.sbp-gallery[data-variant="columns"] .sbp-gallery-grid{display:block;column-width:200px;column-gap:10px}
 .sbp-gallery[data-variant="columns"] .sbp-gallery-grid li{margin-bottom:10px;break-inside:avoid}
 .sbp-gallery[data-variant="columns"] .sbp-gallery-grid img{aspect-ratio:auto;height:auto}
 .sbp-gallery[data-variant="featured"] .sbp-gallery-grid li:first-child{grid-column:span 2;grid-row:span 2}

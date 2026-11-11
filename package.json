@@ -17,6 +17,8 @@
     "infra:down": "docker compose down",
     "db:migrate": "pnpm --filter api prisma:migrate",
     "db:studio": "pnpm --filter api prisma:studio",
+    "db:seed": "pnpm --filter api db:seed",
+    "seed:moonbarber": "pnpm --filter api seed:moonbarber",
     "prepare": "husky"
   },
   "devDependencies": {

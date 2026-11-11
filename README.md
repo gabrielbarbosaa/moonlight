@@ -49,6 +49,18 @@ Endereços úteis:
 - Mailpit (e-mails do 2FA): http://localhost:8026
 - Imagens enviadas: gravadas em `apps/api/storage/media` e servidas em http://localhost:4000/media/files/...
 
+## Exemplo: MoonBarber
+
+Uma barbearia fictícia que usa quase tudo da plataforma: tema escuro, destaque com imagem, redes sociais, carrossel, lista de serviços, galeria, FAQ, agenda online e plano Pro. Com a infra e a API configuradas, crie o exemplo com:
+
+```bash
+pnpm seed:moonbarber
+```
+
+Depois abra http://localhost:3000/s/moonbarber (agenda em `/s/moonbarber/agenda`). A conta do dono é `moonbarber@example.com` com a senha impressa pelo comando; o código de 2FA chega no Mailpit. Esse comando recria tudo do zero. Só funciona fora de produção.
+
+O exemplo fica salvo no banco e nas imagens em disco, então não precisa rodar nada de novo no dia a dia. Ele também é recriado sozinho quando o banco é refeito (`prisma migrate reset`, que roda o seed automaticamente) e `pnpm db:seed` só o recria se estiver faltando algo (banco ou imagens).
+
 ## Deploy
 
 A API roda numa VPS com Docker (Caddy, API, Postgres e Redis) e o front na Vercel. O passo a passo, as variáveis e a operação (atualização, backup) estão em [`deploy/README.md`](deploy/README.md).

@@ -10,9 +10,14 @@
     "typecheck": "prisma generate && tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
     "test": "echo \"sem testes ainda em api\"",
+    "seed:moonbarber": "node --env-file=../../.env scripts/seed-moonbarber.mjs --force",
+    "db:seed": "dotenv -e ../../.env -- prisma db seed",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "dotenv -e ../../.env -- prisma migrate dev",
     "prisma:studio": "dotenv -e ../../.env -- prisma studio"
+  },
+  "prisma": {
+    "seed": "node scripts/seed-moonbarber.mjs"
   },
   "dependencies": {
     "@moonlight/schemas": "workspace:*",
