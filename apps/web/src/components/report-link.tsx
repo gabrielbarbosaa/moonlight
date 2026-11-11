@@ -7,12 +7,8 @@ export function ReportLink({ slug }: { slug: string }) {
   const href = pathname.startsWith(`/s/${slug}`) ? `/s/${slug}/report` : '/report';
 
   return (
-    <p
-      style={{ textAlign: 'center', fontSize: 12, margin: 0, padding: '8px 0 16px', opacity: 0.7 }}
-    >
-      <a href={href} style={{ color: 'inherit' }}>
-        Denunciar esta página
-      </a>
+    <p className="sbp-report">
+      <a href={href}>Denunciar esta página</a>
     </p>
   );
 }

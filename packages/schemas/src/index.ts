@@ -1,5 +1,7 @@
 export * from './auth';
 export * from './tenant';
+export * from './url';
+export * from './theme';
 export * from './blocks';
 export * from './analytics';
 export * from './backoffice';

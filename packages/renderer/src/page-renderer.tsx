@@ -1,25 +1,56 @@
-import { pageSchema, type PageContent } from '@sitebuilder/schemas';
+import { pageSchema, type Block, type PageContent, type Theme } from '@sitebuilder/schemas';
+import type { ReactNode } from 'react';
 import { renderBlock } from './blocks';
-import { FONT_STACKS, readableTextColor } from './utils';
+import { RENDERER_STYLES } from './styles';
+import { themeStyle } from './utils';
 
-export function PageRenderer({ content }: { content: PageContent }) {
+export type RendererFill = 'viewport' | 'container';
+
+export function PageRenderer({
+  content,
+  fill = 'viewport',
+  after,
+}: {
+  content: PageContent;
+  fill?: RendererFill;
+  after?: ReactNode;
+}) {
   const parsed = pageSchema.safeParse(content);
   if (!parsed.success) return null;
 
   const { theme, blocks } = parsed.data;
 
   return (
-    <main
-      style={{
-        minHeight: '100vh',
-        background: theme.background,
-        color: readableTextColor(theme.background),
-        fontFamily: FONT_STACKS[theme.font],
-      }}
-    >
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 20px' }}>
-        {blocks.map((block) => renderBlock(block, theme))}
+    <main className="sbp" data-fill={fill} data-btn={theme.buttonStyle} style={themeStyle(theme)}>
+      <style>{RENDERER_STYLES}</style>
+      <div className="sbp-wrap">
+        {blocks.map((block) => renderBlock(block))}
+        {after && <div className="sbp-extra">{after}</div>}
       </div>
     </main>
+  );
+}
+
+export function BlockPreview({
+  block,
+  theme,
+  fallbackImage,
+}: {
+  block: Block;
+  theme: Theme;
+  fallbackImage?: string;
+}) {
+  return (
+    <div
+      className="sbp"
+      data-fill="container"
+      data-btn={theme.buttonStyle}
+      style={themeStyle(theme)}
+    >
+      <style>{RENDERER_STYLES}</style>
+      <div className="sbp-wrap" style={{ padding: 20 }}>
+        {renderBlock(block, { fallbackImage })}
+      </div>
+    </div>
   );
 }

@@ -3,18 +3,16 @@
 import { REPORT_REASON_LABELS, type BackofficeTenant } from '@sitebuilder/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, type FormEvent } from 'react';
 import { authApi, backofficeApi, getErrorMessage } from '@/lib/api';
 
-const mainStyle = { maxWidth: 900, margin: '48px auto', padding: '0 16px' } as const;
 const cellStyle = {
-  padding: '6px 8px',
-  borderBottom: '1px solid #eee',
+  padding: '12px 14px',
+  borderBottom: '1px solid var(--border)',
   textAlign: 'left',
+  verticalAlign: 'top',
 } as const;
-const errorStyle = { color: '#b00020' } as const;
 
 type Tab = 'reports' | 'tenants' | 'audit';
 
@@ -34,17 +32,9 @@ function formatDate(value: string) {
 
 function Stat({ label, value }: { label: string; value: number }) {
   return (
-    <div
-      style={{
-        border: '1px solid #ddd',
-        borderRadius: 8,
-        padding: '10px 14px',
-        flex: 1,
-        minWidth: 140,
-      }}
-    >
-      <div style={{ fontSize: 13, color: '#555' }}>{label}</div>
-      <div style={{ fontSize: 26, fontWeight: 700 }}>{value.toLocaleString('pt-BR')}</div>
+    <div className="kpi">
+      <div className="kpi-label">{label}</div>
+      <div className="kpi-value">{value.toLocaleString('pt-BR')}</div>
     </div>
   );
 }
@@ -74,7 +64,7 @@ function SuspendForm({
         value={reason}
         maxLength={200}
         onChange={(event) => setReason(event.target.value)}
-        style={{ flex: 1, minWidth: 180, padding: 4 }}
+        style={{ flex: 1, minWidth: 180 }}
       />
       <button type="submit" disabled={pending || reason.trim().length < 3}>
         Confirmar suspensão
@@ -106,26 +96,26 @@ function ReportsTab() {
 
   return (
     <section>
-      <p>
-        Status:{' '}
+      <div className="segmented" role="group" aria-label="Status" style={{ marginBottom: 14 }}>
         {(['OPEN', 'RESOLVED', 'DISMISSED'] as const).map((value) => (
           <button
             key={value}
             type="button"
-            disabled={value === status}
+            aria-pressed={value === status}
             onClick={() => setStatus(value)}
-            style={{ marginRight: 6 }}
           >
             {value === 'OPEN' ? 'Abertas' : value === 'RESOLVED' ? 'Resolvidas' : 'Dispensadas'}
           </button>
         ))}
-      </p>
-      {resolve.isError && <p style={errorStyle}>{getErrorMessage(resolve.error)}</p>}
+      </div>
+      {resolve.isError && <p role="alert">{getErrorMessage(resolve.error)}</p>}
       {reports.isPending && <p>Carregando...</p>}
-      {reports.isError && <p style={errorStyle}>{getErrorMessage(reports.error)}</p>}
-      {reports.data && reports.data.items.length === 0 && <p>Nenhuma denúncia.</p>}
+      {reports.isError && <p role="alert">{getErrorMessage(reports.error)}</p>}
+      {reports.data && reports.data.items.length === 0 && (
+        <div className="empty">Nenhuma denúncia nesta lista.</div>
+      )}
       {reports.data && reports.data.items.length > 0 && (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <table>
           <thead>
             <tr>
               <th style={cellStyle}>Página</th>
@@ -146,7 +136,7 @@ function ReportsTab() {
                 <td style={cellStyle}>
                   {reasonLabel(report.reason)}
                   {report.details && (
-                    <div style={{ fontSize: 13, color: '#555' }}>{report.details}</div>
+                    <div style={{ fontSize: 13, color: 'var(--muted)' }}>{report.details}</div>
                   )}
                 </td>
                 <td style={cellStyle}>{formatDate(report.createdAt)}</td>
@@ -282,13 +272,15 @@ function TenantsTab() {
         <button type="submit">Buscar</button>
       </form>
 
-      {actionError && <p style={errorStyle}>{getErrorMessage(actionError)}</p>}
+      {actionError && <p role="alert">{getErrorMessage(actionError)}</p>}
       {tenants.isPending && <p>Carregando...</p>}
-      {tenants.isError && <p style={errorStyle}>{getErrorMessage(tenants.error)}</p>}
-      {tenants.data && tenants.data.items.length === 0 && <p>Nenhuma página encontrada.</p>}
+      {tenants.isError && <p role="alert">{getErrorMessage(tenants.error)}</p>}
+      {tenants.data && tenants.data.items.length === 0 && (
+        <div className="empty">Nenhuma página encontrada.</div>
+      )}
       {tenants.data && tenants.data.items.length > 0 && (
         <>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <table>
             <thead>
               <tr>
                 <th style={cellStyle}>Página</th>
@@ -302,7 +294,7 @@ function TenantsTab() {
                 <tr key={tenant.id}>
                   <td style={cellStyle}>
                     <strong>{tenant.name}</strong>
-                    <div style={{ fontSize: 13, color: '#555' }}>{tenant.slug}</div>
+                    <div style={{ fontSize: 13, color: 'var(--muted)' }}>{tenant.slug}</div>
                   </td>
                   <td style={cellStyle}>{tenant.ownerEmail}</td>
                   <td style={cellStyle}>
@@ -337,11 +329,11 @@ function AuditTab() {
   const audit = useQuery({ queryKey: ['backoffice', 'audit'], queryFn: backofficeApi.audit });
 
   if (audit.isPending) return <p>Carregando...</p>;
-  if (audit.isError) return <p style={errorStyle}>{getErrorMessage(audit.error)}</p>;
-  if (audit.data.length === 0) return <p>Nenhuma ação registrada.</p>;
+  if (audit.isError) return <p role="alert">{getErrorMessage(audit.error)}</p>;
+  if (audit.data.length === 0) return <div className="empty">Nenhuma ação registrada.</div>;
 
   return (
-    <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <table>
       <thead>
         <tr>
           <th style={cellStyle}>Quando</th>
@@ -391,7 +383,7 @@ export default function BackofficePage() {
 
   if (me.isPending || status === 401 || forbidden) {
     return (
-      <main style={mainStyle}>
+      <main className="page">
         <p>Carregando...</p>
       </main>
     );
@@ -399,41 +391,36 @@ export default function BackofficePage() {
 
   if (me.isError) {
     return (
-      <main style={mainStyle}>
-        <p style={errorStyle}>Não foi possível carregar o backoffice.</p>
+      <main className="page">
+        <p role="alert">Não foi possível carregar o backoffice.</p>
       </main>
     );
   }
 
   return (
-    <main style={mainStyle}>
-      <p>
-        <Link href="/admin">← Painel</Link>
-      </p>
-      <h1>Backoffice</h1>
+    <main className="page">
+      <div className="page-head">
+        <div>
+          <h1>Backoffice</h1>
+          <p>Moderação, denúncias e auditoria da plataforma.</p>
+        </div>
+        <div className="segmented" role="group" aria-label="Seção">
+          {(Object.keys(TAB_LABELS) as Tab[]).map((key) => (
+            <button key={key} type="button" aria-pressed={key === tab} onClick={() => setTab(key)}>
+              {TAB_LABELS[key]}
+            </button>
+          ))}
+        </div>
+      </div>
 
       {stats.data && (
-        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', margin: '16px 0' }}>
+        <div className="row" style={{ alignItems: 'stretch', gap: 12, marginBottom: 24 }}>
           <Stat label="Usuários" value={stats.data.users} />
           <Stat label="Páginas" value={stats.data.tenants} />
           <Stat label="Suspensas" value={stats.data.suspendedTenants} />
           <Stat label="Denúncias abertas" value={stats.data.openReports} />
         </div>
       )}
-
-      <p>
-        {(Object.keys(TAB_LABELS) as Tab[]).map((key) => (
-          <button
-            key={key}
-            type="button"
-            disabled={key === tab}
-            onClick={() => setTab(key)}
-            style={{ marginRight: 6 }}
-          >
-            {TAB_LABELS[key]}
-          </button>
-        ))}
-      </p>
 
       {tab === 'reports' && <ReportsTab />}
       {tab === 'tenants' && <TenantsTab />}

@@ -1,158 +1,106 @@
 import type { CSSProperties, ReactElement } from 'react';
-import type { Block, PageContent } from '@sitebuilder/schemas';
+import type { Block } from '@sitebuilder/schemas';
 import { safeHref } from './utils';
 
-type Theme = PageContent['theme'];
 type BlockOf<T extends Block['type']> = Extract<Block, { type: T }>;
 
-const sectionStyle: CSSProperties = { padding: '24px 0' };
+export type RenderOptions = { fallbackImage?: string };
 
-function HeaderBlock({ block }: { block: BlockOf<'header'> }) {
-  const avatar = safeHref(block.props.avatarUrl);
-  const centered = block.variant !== 'simple';
+function HeaderBlock({ block, options }: { block: BlockOf<'header'>; options: RenderOptions }) {
+  const avatar = safeHref(block.props.avatarUrl) ?? options.fallbackImage;
+  const showAvatar =
+    avatar && (block.variant === 'with-avatar' || block.variant === 'avatar-centered');
 
   return (
-    <header
-      style={{
-        ...sectionStyle,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 16,
-        justifyContent: centered ? 'center' : 'flex-start',
-        flexDirection: block.variant === 'centered' ? 'column' : 'row',
-        textAlign: centered ? 'center' : 'left',
-      }}
-    >
-      {block.variant === 'with-avatar' && avatar && (
-        <img
-          src={avatar}
-          alt=""
-          width={72}
-          height={72}
-          style={{ borderRadius: '50%', objectFit: 'cover' }}
-        />
-      )}
-      <h1 style={{ margin: 0, fontSize: 32 }}>{block.props.title}</h1>
+    <header className="sbp-block sbp-header" data-variant={block.variant}>
+      {showAvatar && <img className="sbp-avatar" src={avatar} alt="" loading="lazy" />}
+      <h1 className="sbp-title">{block.props.title}</h1>
     </header>
   );
 }
 
-function CtaButton({
-  label,
-  url,
-  theme,
-  trackId,
-}: {
-  label?: string;
-  url?: string;
-  theme: Theme;
-  trackId: string;
-}) {
+function CtaButton({ label, url, trackId }: { label?: string; url?: string; trackId: string }) {
   const href = safeHref(url);
   if (!label || !href) return null;
   return (
-    <a
-      href={href}
-      rel="noopener noreferrer"
-      data-track-link={trackId}
-      style={{
-        display: 'inline-block',
-        marginTop: 16,
-        padding: '10px 20px',
-        borderRadius: 8,
-        background: theme.primaryColor,
-        color: '#ffffff',
-        textDecoration: 'none',
-        fontWeight: 600,
-      }}
-    >
-      {label}
-    </a>
+    <p className="sbp-hero-cta">
+      <a className="sbp-btn" href={href} rel="noopener noreferrer" data-track-link={trackId}>
+        {label}
+      </a>
+    </p>
   );
 }
 
-function HeroBlock({ block, theme }: { block: BlockOf<'hero'>; theme: Theme }) {
+function HeroBlock({ block, options }: { block: BlockOf<'hero'>; options: RenderOptions }) {
   const { heading, subheading, imageUrl, ctaLabel, ctaUrl } = block.props;
-  const image = safeHref(imageUrl);
+  const image = safeHref(imageUrl) ?? options.fallbackImage;
 
   const text = (
     <div>
-      <h2 style={{ margin: 0, fontSize: 40, lineHeight: 1.1 }}>{heading}</h2>
-      {subheading && <p style={{ fontSize: 18, opacity: 0.8 }}>{subheading}</p>}
-      <CtaButton label={ctaLabel} url={ctaUrl} theme={theme} trackId={`cta-${block.id}`} />
+      <h2>{heading}</h2>
+      {subheading && <p className="sbp-hero-sub">{subheading}</p>}
+      <CtaButton label={ctaLabel} url={ctaUrl} trackId={`cta-${block.id}`} />
     </div>
   );
 
   if (block.variant === 'full-bleed') {
+    const style: CSSProperties | undefined = image
+      ? {
+          backgroundImage: `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url("${image}")`,
+        }
+      : undefined;
     return (
       <section
-        style={{
-          ...sectionStyle,
-          padding: '72px 24px',
-          borderRadius: 12,
-          textAlign: 'center',
-          color: image ? '#ffffff' : undefined,
-          background: image
-            ? `linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.5)), url("${image}") center / cover`
-            : undefined,
-        }}
+        className="sbp-block sbp-hero"
+        data-variant="full-bleed"
+        data-image={image ? 'true' : 'false'}
+        style={style}
       >
         {text}
       </section>
     );
   }
 
-  if (block.variant === 'image-right' && image) {
+  if ((block.variant === 'image-right' || block.variant === 'image-left') && image) {
     return (
-      <section
-        style={{
-          ...sectionStyle,
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: 24,
-          alignItems: 'center',
-        }}
-      >
+      <section className="sbp-block sbp-hero" data-variant={block.variant}>
         {text}
-        <img src={image} alt="" style={{ width: '100%', borderRadius: 12, objectFit: 'cover' }} />
+        <div className="sbp-hero-media">
+          <img className="sbp-img" src={image} alt="" loading="lazy" />
+        </div>
       </section>
     );
   }
 
-  return <section style={sectionStyle}>{text}</section>;
+  const variant =
+    block.variant === 'image-right' || block.variant === 'image-left' ? 'text' : block.variant;
+  return (
+    <section className="sbp-block sbp-hero" data-variant={variant}>
+      {text}
+    </section>
+  );
 }
 
-function LinksBlock({ block, theme }: { block: BlockOf<'links'>; theme: Theme }) {
-  const containerStyle: CSSProperties =
-    block.variant === 'grid'
-      ? { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }
-      : block.variant === 'pills'
-        ? { display: 'flex', flexWrap: 'wrap', gap: 8 }
-        : { display: 'flex', flexDirection: 'column', gap: 12 };
-
-  const itemStyle: CSSProperties = {
-    display: 'block',
-    padding: block.variant === 'pills' ? '8px 16px' : '14px 18px',
-    borderRadius: block.variant === 'pills' ? 999 : 10,
-    border: `2px solid ${theme.primaryColor}`,
-    color: 'inherit',
-    textAlign: 'center',
-    textDecoration: 'none',
-    fontWeight: 600,
-  };
+function LinksBlock({ block }: { block: BlockOf<'links'> }) {
+  const className =
+    block.variant === 'cards'
+      ? 'sbp-link-card'
+      : block.variant === 'minimal'
+        ? 'sbp-link-min'
+        : 'sbp-btn';
 
   return (
-    <nav style={{ ...sectionStyle, ...containerStyle }}>
+    <nav className="sbp-block sbp-links" data-variant={block.variant}>
       {block.props.items.map((item) => {
         const href = safeHref(item.url);
         if (!href) return null;
         return (
           <a
             key={item.id}
+            className={className}
             href={href}
             rel="noopener noreferrer"
             data-track-link={item.id}
-            style={itemStyle}
           >
             {item.label}
           </a>
@@ -162,56 +110,40 @@ function LinksBlock({ block, theme }: { block: BlockOf<'links'>; theme: Theme })
   );
 }
 
-function TextBlock({ block, theme }: { block: BlockOf<'text'>; theme: Theme }) {
+function TextBlock({ block }: { block: BlockOf<'text'> }) {
   if (block.variant === 'quote') {
     return (
-      <blockquote
-        style={{
-          ...sectionStyle,
-          margin: 0,
-          paddingLeft: 16,
-          borderLeft: `4px solid ${theme.primaryColor}`,
-          fontStyle: 'italic',
-          whiteSpace: 'pre-wrap',
-        }}
-      >
+      <blockquote className="sbp-block sbp-text" data-variant="quote">
         {block.props.content}
       </blockquote>
     );
   }
   return (
-    <p style={{ ...sectionStyle, margin: 0, whiteSpace: 'pre-wrap' }}>{block.props.content}</p>
+    <p className="sbp-block sbp-text" data-variant={block.variant}>
+      {block.props.content}
+    </p>
   );
 }
 
 function FooterBlock({ block }: { block: BlockOf<'footer'> }) {
   if (!block.props.text) return null;
   return (
-    <footer
-      style={{
-        ...sectionStyle,
-        marginTop: 16,
-        borderTop: '1px solid rgba(128,128,128,0.35)',
-        fontSize: 14,
-        opacity: 0.75,
-        textAlign: block.variant === 'columns' ? 'left' : 'center',
-      }}
-    >
+    <footer className="sbp-block sbp-footer" data-variant={block.variant}>
       {block.props.text}
     </footer>
   );
 }
 
-export function renderBlock(block: Block, theme: Theme): ReactElement | null {
+export function renderBlock(block: Block, options: RenderOptions = {}): ReactElement | null {
   switch (block.type) {
     case 'header':
-      return <HeaderBlock key={block.id} block={block} />;
+      return <HeaderBlock key={block.id} block={block} options={options} />;
     case 'hero':
-      return <HeroBlock key={block.id} block={block} theme={theme} />;
+      return <HeroBlock key={block.id} block={block} options={options} />;
     case 'links':
-      return <LinksBlock key={block.id} block={block} theme={theme} />;
+      return <LinksBlock key={block.id} block={block} />;
     case 'text':
-      return <TextBlock key={block.id} block={block} theme={theme} />;
+      return <TextBlock key={block.id} block={block} />;
     case 'footer':
       return <FooterBlock key={block.id} block={block} />;
   }

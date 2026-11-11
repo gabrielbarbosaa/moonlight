@@ -1,16 +1,18 @@
 'use client';
 
 import { PageRenderer } from '@sitebuilder/renderer';
-import type { Block, BlockType, PageContent } from '@sitebuilder/schemas';
+import type { PageContent } from '@sitebuilder/schemas';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { billingApi, getErrorMessage, pagesApi, type PageState } from '@/lib/api';
-import { BLOCK_LABELS, createBlock, moveItem, validatePage } from '@/lib/page-editor';
-import { BlockForm } from './block-forms';
-import { ColorField, SelectField } from './fields';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ROOT_DOMAIN } from '@/components/create-tenant-form';
+import { Icon } from '@/components/icons';
+import { billingApi, getErrorMessage, pagesApi, tenantsApi, type PageState } from '@/lib/api';
+import { validatePage } from '@/lib/page-editor';
+import { BlocksPanel } from './blocks-panel';
+import { ThemePanel } from './theme-panel';
 
-const BLOCK_TYPES = Object.keys(BLOCK_LABELS) as BlockType[];
+type Tab = 'blocks' | 'theme';
+type Device = 'mobile' | 'desktop';
 
 function snapshotOf(page: PageContent) {
   const result = validatePage(page);
@@ -21,9 +23,11 @@ export function PageEditor({ initial }: { initial: PageState }) {
   const [page, setPage] = useState<PageContent>(initial.draft);
   const [server, setServer] = useState<PageState>(initial);
   const [savedSnapshot, setSavedSnapshot] = useState(() => snapshotOf(initial.draft));
-  const [newType, setNewType] = useState<BlockType>('text');
+  const [tab, setTab] = useState<Tab>('blocks');
+  const [device, setDevice] = useState<Device>('mobile');
 
   const billing = useQuery({ queryKey: ['billing'], queryFn: billingApi.me });
+  const tenants = useQuery({ queryKey: ['tenants'], queryFn: tenantsApi.listMine });
   const maxBlocks = billing.data?.entitlements.maxBlocks ?? 50;
 
   const validation = useMemo(() => validatePage(page), [page]);
@@ -64,174 +68,138 @@ export function PageEditor({ initial }: { initial: PageState }) {
 
   const busy = save.isPending || publish.isPending;
   const error = save.error ?? publish.error;
+  const canSave = validation.valid && dirty && !busy;
+  const canPublish = validation.valid && (dirty || server.hasUnpublishedChanges) && !busy;
 
-  const updateBlock = (index: number, block: Block) =>
-    setPage((current) => ({
-      ...current,
-      blocks: current.blocks.map((b, i) => (i === index ? block : b)),
-    }));
+  const doSave = useCallback(() => {
+    if (validation.valid && dirty && !busy) save.mutate(validation.page);
+  }, [validation, dirty, busy, save]);
+
+  useEffect(() => {
+    const handler = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        doSave();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [doSave]);
 
   const status = !validation.valid
-    ? 'Corrija os erros para salvar.'
+    ? { text: 'Corrija os erros para salvar', tone: 'badge-danger' }
     : dirty
-      ? 'Alterações não salvas.'
+      ? { text: 'Alterações não salvas', tone: 'badge-warning' }
       : server.hasUnpublishedChanges
-        ? 'Rascunho salvo, com alterações ainda não publicadas.'
-        : 'Tudo publicado.';
+        ? { text: 'Rascunho salvo, não publicado', tone: 'badge' }
+        : { text: 'Tudo publicado', tone: 'badge-success' };
+
+  const slug = tenants.data?.[0]?.slug;
+  const protocol = typeof window === 'undefined' ? 'http:' : window.location.protocol;
+  const publicUrl = slug ? `${protocol}//${slug}.${ROOT_DOMAIN}` : null;
 
   return (
-    <div style={{ padding: '16px 24px' }}>
-      <header style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap' }}>
-        <Link href="/admin">← Painel</Link>
-        <h1 style={{ margin: 0, fontSize: 22 }}>Editor</h1>
-        <span role="status" style={{ flex: 1, color: '#555' }}>
-          {status}
-        </span>
-        <button
-          type="button"
-          disabled={busy || !validation.valid || !dirty}
-          onClick={() => validation.valid && save.mutate(validation.page)}
-        >
-          {save.isPending ? 'Salvando...' : 'Salvar rascunho'}
-        </button>
-        <button
-          type="button"
-          disabled={busy || !validation.valid || (!dirty && !server.hasUnpublishedChanges)}
-          onClick={() => validation.valid && publish.mutate(validation.page)}
-        >
-          {publish.isPending ? 'Publicando...' : 'Publicar'}
-        </button>
-      </header>
+    <>
+      <div className="editor-bar">
+        <div className="editor-bar-inner">
+          <div className="row" style={{ flex: 1, minWidth: 220 }}>
+            <strong style={{ fontSize: '1.05rem' }}>Editor</strong>
+            <span className={`badge ${status.tone}`} aria-live="polite">
+              {status.text}
+            </span>
+          </div>
+          {publicUrl && server.published && (
+            <a className="btn" href={publicUrl} target="_blank" rel="noreferrer">
+              <Icon name="external" />
+              Ver página
+            </a>
+          )}
+          <button type="button" className="btn" onClick={doSave} disabled={!canSave}>
+            {save.isPending ? 'Salvando...' : 'Salvar rascunho'}
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => validation.valid && publish.mutate(validation.page)}
+            disabled={!canPublish}
+          >
+            {publish.isPending ? 'Publicando...' : 'Publicar'}
+          </button>
+        </div>
+      </div>
 
-      {error && <p style={{ color: '#b00020' }}>{getErrorMessage(error)}</p>}
-      {!validation.valid && (
-        <ul style={{ color: '#b00020', fontSize: 14 }}>
-          {validation.errors.map((message) => (
-            <li key={message}>{message}</li>
-          ))}
-        </ul>
-      )}
+      <div className="editor-layout">
+        <section className="editor-side">
+          {error && <p role="alert">{getErrorMessage(error)}</p>}
+          {!validation.valid && (
+            <div role="alert" style={{ marginBottom: 16 }}>
+              <ul style={{ margin: 0 }}>
+                {validation.errors.map((message) => (
+                  <li key={message}>{message}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
-          gap: 24,
-          marginTop: 16,
-          alignItems: 'start',
-        }}
-      >
-        <section>
-          <fieldset style={{ border: '1px solid #ddd', borderRadius: 8 }}>
-            <legend>Tema</legend>
-            <ColorField
-              label="Cor principal"
-              value={page.theme.primaryColor}
-              onChange={(primaryColor) =>
-                setPage({ ...page, theme: { ...page.theme, primaryColor } })
-              }
-            />
-            <ColorField
-              label="Fundo"
-              value={page.theme.background}
-              onChange={(background) => setPage({ ...page, theme: { ...page.theme, background } })}
-            />
-            <SelectField
-              label="Fonte"
-              value={page.theme.font}
-              options={[
-                { value: 'sans', label: 'Sem serifa' },
-                { value: 'serif', label: 'Serifada' },
-                { value: 'mono', label: 'Monoespaçada' },
-              ]}
-              onChange={(font) =>
-                setPage({
-                  ...page,
-                  theme: { ...page.theme, font: font as PageContent['theme']['font'] },
-                })
-              }
-            />
-          </fieldset>
-
-          {page.blocks.map((block, index) => (
-            <fieldset
-              key={block.id}
-              style={{ border: '1px solid #ddd', borderRadius: 8, marginTop: 12 }}
-            >
-              <legend>
-                {BLOCK_LABELS[block.type]} {index + 1}
-              </legend>
-              <BlockForm block={block} onChange={(next) => updateBlock(index, next)} />
-              <p style={{ margin: '12px 0 4px' }}>
-                <button
-                  type="button"
-                  disabled={index === 0}
-                  onClick={() =>
-                    setPage({ ...page, blocks: moveItem(page.blocks, index, index - 1) })
-                  }
-                >
-                  Subir
-                </button>{' '}
-                <button
-                  type="button"
-                  disabled={index === page.blocks.length - 1}
-                  onClick={() =>
-                    setPage({ ...page, blocks: moveItem(page.blocks, index, index + 1) })
-                  }
-                >
-                  Descer
-                </button>{' '}
-                <button
-                  type="button"
-                  onClick={() =>
-                    setPage({ ...page, blocks: page.blocks.filter((_, i) => i !== index) })
-                  }
-                >
-                  Remover bloco
-                </button>
-              </p>
-            </fieldset>
-          ))}
-
-          <p style={{ marginTop: 16, display: 'flex', gap: 8 }}>
-            <select
-              value={newType}
-              onChange={(event) => setNewType(event.target.value as BlockType)}
-            >
-              {BLOCK_TYPES.map((type) => (
-                <option key={type} value={type}>
-                  {BLOCK_LABELS[type]}
-                </option>
-              ))}
-            </select>
+          <div className="editor-tabs" role="tablist" aria-label="Seções do editor">
             <button
               type="button"
-              disabled={page.blocks.length >= maxBlocks}
-              onClick={() => setPage({ ...page, blocks: [...page.blocks, createBlock(newType)] })}
+              role="tab"
+              aria-selected={tab === 'blocks'}
+              onClick={() => setTab('blocks')}
             >
-              Adicionar bloco
+              <Icon name="blocks" />
+              Blocos
             </button>
-            <span style={{ alignSelf: 'center', fontSize: 13, color: '#555' }}>
-              {page.blocks.length} de {maxBlocks} blocos
-              {page.blocks.length >= maxBlocks && (
-                <>
-                  {' '}
-                  · <Link href="/admin/billing">Ver planos</Link>
-                </>
-              )}
-            </span>
-          </p>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={tab === 'theme'}
+              onClick={() => setTab('theme')}
+            >
+              <Icon name="palette" />
+              Tema
+            </button>
+          </div>
+
+          {tab === 'blocks' ? (
+            <BlocksPanel page={page} maxBlocks={maxBlocks} onChange={setPage} />
+          ) : (
+            <ThemePanel theme={page.theme} onChange={(theme) => setPage({ ...page, theme })} />
+          )}
         </section>
 
-        <section style={{ position: 'sticky', top: 16 }}>
-          <p style={{ margin: '0 0 8px', fontSize: 13, color: '#555' }}>Pré-visualização</p>
-          <div
-            style={{ border: '1px solid #ddd', borderRadius: 8, overflow: 'auto', height: '75vh' }}
-          >
-            <PageRenderer content={lastValid.current} />
+        <section className="editor-preview">
+          <div className="preview-toolbar">
+            <span className="muted" style={{ fontSize: '0.85rem', fontWeight: 600 }}>
+              Pré-visualização
+            </span>
+            <div className="segmented" role="group" aria-label="Tamanho da tela">
+              <button
+                type="button"
+                aria-pressed={device === 'mobile'}
+                onClick={() => setDevice('mobile')}
+              >
+                <Icon name="phone" />
+                Celular
+              </button>
+              <button
+                type="button"
+                aria-pressed={device === 'desktop'}
+                onClick={() => setDevice('desktop')}
+              >
+                <Icon name="monitor" />
+                Computador
+              </button>
+            </div>
+          </div>
+          <div className="preview-stage">
+            <div className="preview-frame" data-device={device}>
+              <PageRenderer content={lastValid.current} fill="container" />
+            </div>
           </div>
         </section>
       </div>
-    </div>
+    </>
   );
 }

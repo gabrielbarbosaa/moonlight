@@ -3,19 +3,10 @@
 import type { BookingConfirmation, BookingSlot, PublicBookingInfo } from '@sitebuilder/schemas';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { Icon } from '@/components/icons';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 const DAYS_PER_PAGE = 7;
-
-const mainStyle = { maxWidth: 560, margin: '48px auto', padding: '0 16px' } as const;
-const fieldStyle = {
-  display: 'block',
-  width: '100%',
-  padding: 8,
-  marginTop: 4,
-  boxSizing: 'border-box',
-} as const;
-const errorStyle = { color: '#b00020' } as const;
 
 function todayIn(timeZone: string) {
   return new Intl.DateTimeFormat('en-CA', {
@@ -155,41 +146,62 @@ export default function AgendaPage() {
 
   if (loadError === 'notfound') {
     return (
-      <main style={mainStyle}>
-        <h1>Agenda indisponível</h1>
-        <p>Esta página não aceita reservas no momento.</p>
+      <main className="page page-narrow">
+        <div className="card" style={{ textAlign: 'center' }}>
+          <h1>Agenda indisponível</h1>
+          <p className="muted" style={{ margin: 0 }}>
+            Esta página não aceita reservas no momento.
+          </p>
+        </div>
       </main>
     );
   }
 
   if (loadError === 'error') {
     return (
-      <main style={mainStyle}>
-        <p style={errorStyle}>Não foi possível carregar a agenda.</p>
+      <main className="page page-narrow">
+        <p role="alert">Não foi possível carregar a agenda.</p>
       </main>
     );
   }
 
   if (!info) {
     return (
-      <main style={mainStyle}>
-        <p>Carregando...</p>
+      <main className="page page-narrow">
+        <p className="muted">Carregando...</p>
       </main>
     );
   }
 
   if (confirmation) {
     return (
-      <main style={mainStyle}>
-        <h1>Reserva confirmada</h1>
-        <p>
-          {confirmation.serviceName} em{' '}
-          <strong>
-            {dayLabel(confirmation.startsAt, info.timezone)} às{' '}
-            {timeLabel(confirmation.startsAt, info.timezone)}
-          </strong>
-          . Enviamos a confirmação para o seu e-mail.
-        </p>
+      <main className="page page-narrow">
+        <div className="card" style={{ textAlign: 'center', padding: '36px 24px' }}>
+          <span
+            className="icon-tile"
+            style={{
+              width: 56,
+              height: 56,
+              color: 'var(--success)',
+              background: 'var(--success-soft)',
+              borderRadius: 999,
+            }}
+          >
+            <Icon name="check" style={{ width: 26, height: 26 }} />
+          </span>
+          <h1 style={{ margin: '16px 0 8px' }}>Reserva confirmada</h1>
+          <p style={{ margin: 0 }}>
+            {confirmation.serviceName} em{' '}
+            <strong>
+              {dayLabel(confirmation.startsAt, info.timezone)} às{' '}
+              {timeLabel(confirmation.startsAt, info.timezone)}
+            </strong>
+            .
+          </p>
+          <p className="muted" style={{ margin: '8px 0 0' }}>
+            Enviamos a confirmação para o seu e-mail.
+          </p>
+        </div>
       </main>
     );
   }
@@ -197,120 +209,133 @@ export default function AgendaPage() {
   const service = info.services.find((item) => item.id === serviceId);
 
   return (
-    <main style={mainStyle}>
-      <h1>Agendar com {info.name}</h1>
+    <main className="page page-narrow">
+      <div className="page-head">
+        <div>
+          <h1>Agendar com {info.name}</h1>
+          <p>Escolha o serviço e um horário livre.</p>
+        </div>
+      </div>
 
-      <label style={{ display: 'block' }}>
-        Serviço
-        <select
-          value={serviceId}
-          onChange={(event) => {
-            setServiceId(event.target.value);
-            setOffset(0);
-          }}
-          style={fieldStyle}
-        >
-          {info.services.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.name} ({item.durationMinutes} min)
-            </option>
-          ))}
-        </select>
-      </label>
-      <p style={{ fontSize: 13, color: '#555' }}>Horários no fuso {info.timezone}.</p>
-
-      <p>
-        <button
-          type="button"
-          disabled={offset === 0}
-          onClick={() => setOffset(offset - DAYS_PER_PAGE)}
-        >
-          Dias anteriores
-        </button>{' '}
-        <button
-          type="button"
-          disabled={offset + DAYS_PER_PAGE >= info.maxDaysAhead}
-          onClick={() => setOffset(offset + DAYS_PER_PAGE)}
-        >
-          Próximos dias
-        </button>
-      </p>
-
-      {slots === null && <p>Carregando horários...</p>}
-      {slots !== null && grouped.size === 0 && <p>Nenhum horário livre neste período.</p>}
-      {[...grouped.entries()].map(([key, daySlots]) => (
-        <section key={key} style={{ marginBottom: 12 }}>
-          <h2 style={{ fontSize: 16, margin: '12px 0 6px' }}>
-            {dayLabel(daySlots[0].startsAt, info.timezone)}
-          </h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {daySlots.map((slot) => (
-              <button
-                key={slot.startsAt}
-                type="button"
-                aria-pressed={selected?.startsAt === slot.startsAt}
-                onClick={() => setSelected(slot)}
-                style={{
-                  padding: '6px 10px',
-                  fontWeight: selected?.startsAt === slot.startsAt ? 700 : 400,
-                  outline: selected?.startsAt === slot.startsAt ? '2px solid #4f46e5' : undefined,
-                }}
-              >
-                {timeLabel(slot.startsAt, info.timezone)}
-              </button>
+      <div className="card">
+        <label className="field" style={{ marginTop: 0 }}>
+          Serviço
+          <select
+            value={serviceId}
+            onChange={(event) => {
+              setServiceId(event.target.value);
+              setOffset(0);
+            }}
+          >
+            {info.services.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.name} ({item.durationMinutes} min)
+              </option>
             ))}
+          </select>
+        </label>
+        <p className="hint">Horários no fuso {info.timezone}.</p>
+
+        <div className="row" style={{ justifyContent: 'space-between', margin: '16px 0 4px' }}>
+          <strong>Horários disponíveis</strong>
+          <div className="segmented" role="group" aria-label="Navegar pelos dias">
+            <button
+              type="button"
+              disabled={offset === 0}
+              onClick={() => setOffset(offset - DAYS_PER_PAGE)}
+              aria-label="Dias anteriores"
+            >
+              <Icon name="up" style={{ transform: 'rotate(-90deg)' }} />
+            </button>
+            <button
+              type="button"
+              disabled={offset + DAYS_PER_PAGE >= info.maxDaysAhead}
+              onClick={() => setOffset(offset + DAYS_PER_PAGE)}
+              aria-label="Próximos dias"
+            >
+              <Icon name="up" style={{ transform: 'rotate(90deg)' }} />
+            </button>
           </div>
-        </section>
-      ))}
+        </div>
+
+        {slots === null && <p className="muted">Carregando horários...</p>}
+        {slots !== null && grouped.size === 0 && (
+          <div className="empty" style={{ marginTop: 8 }}>
+            Nenhum horário livre neste período.
+          </div>
+        )}
+        {[...grouped.entries()].map(([key, daySlots]) => (
+          <section key={key} style={{ marginTop: 14 }}>
+            <h2 style={{ fontSize: '0.95rem', margin: '0 0 6px' }}>
+              {dayLabel(daySlots[0].startsAt, info.timezone)}
+            </h2>
+            <div className="option-row" style={{ marginTop: 0 }}>
+              {daySlots.map((slot) => (
+                <button
+                  key={slot.startsAt}
+                  type="button"
+                  aria-pressed={selected?.startsAt === slot.startsAt}
+                  onClick={() => setSelected(slot)}
+                >
+                  {timeLabel(slot.startsAt, info.timezone)}
+                </button>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
 
       {selected && (
-        <form
-          onSubmit={submit}
-          style={{ marginTop: 24, borderTop: '1px solid #ddd', paddingTop: 16 }}
-        >
-          <p>
+        <form onSubmit={submit} className="card" style={{ marginTop: 16 }}>
+          <p style={{ margin: 0 }}>
             <strong>
               {service?.name} · {dayLabel(selected.startsAt, info.timezone)} às{' '}
               {timeLabel(selected.startsAt, info.timezone)}
             </strong>
           </p>
-          <label style={{ display: 'block' }}>
+          <label className="field">
             Seu nome
             <input
               required
               maxLength={80}
               value={name}
               onChange={(event) => setName(event.target.value)}
-              style={fieldStyle}
             />
           </label>
-          <label style={{ display: 'block', marginTop: 12 }}>
+          <label className="field">
             Seu e-mail
             <input
               required
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              style={fieldStyle}
             />
           </label>
-          <label style={{ display: 'block', marginTop: 12 }}>
+          <label className="field">
             Observações (opcional)
             <textarea
               rows={3}
               maxLength={300}
               value={notes}
               onChange={(event) => setNotes(event.target.value)}
-              style={fieldStyle}
             />
           </label>
-          <button type="submit" disabled={sending} style={{ marginTop: 16, padding: 10 }}>
+          <button
+            type="submit"
+            className="btn-lg"
+            disabled={sending}
+            style={{ width: '100%', marginTop: 18 }}
+          >
             {sending ? 'Reservando...' : 'Confirmar reserva'}
           </button>
         </form>
       )}
 
-      {formError && <p style={errorStyle}>{formError}</p>}
+      {formError && (
+        <p role="alert" style={{ marginTop: 16 }}>
+          {formError}
+        </p>
+      )}
     </main>
   );
 }

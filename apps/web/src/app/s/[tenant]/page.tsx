@@ -31,19 +31,31 @@ export default async function TenantPage({ params }: { params: Promise<{ tenant:
 
   if (!tenant.page) {
     return (
-      <main style={{ maxWidth: 640, margin: '80px auto', padding: '0 16px' }}>
-        <h1>{tenant.name}</h1>
-        <p>Esta página ainda não foi publicada.</p>
-      </main>
+      <div className="app">
+        <main className="page page-narrow">
+          <div className="card" style={{ textAlign: 'center' }}>
+            <h1>{tenant.name}</h1>
+            <p className="muted" style={{ margin: 0 }}>
+              Esta página ainda não foi publicada.
+            </p>
+          </div>
+        </main>
+      </div>
     );
   }
 
   return (
     <>
-      <PageRenderer content={tenant.page} />
-      {tenant.bookingEnabled && <AgendaLink slug={tenant.slug} />}
+      <PageRenderer
+        content={tenant.page}
+        after={
+          <>
+            {tenant.bookingEnabled && <AgendaLink slug={tenant.slug} />}
+            <ReportLink slug={tenant.slug} />
+          </>
+        }
+      />
       <TrackView slug={tenant.slug} />
-      <ReportLink slug={tenant.slug} />
     </>
   );
 }

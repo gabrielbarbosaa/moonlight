@@ -4,23 +4,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import { loginSchema, registerSchema, verifyCodeSchema } from '@sitebuilder/schemas';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { authApi, getErrorMessage } from '@/lib/api';
 
 const codeSchema = verifyCodeSchema.pick({ code: true });
 
 type Mode = 'login' | 'register';
-
-const fieldStyle = {
-  display: 'block',
-  width: '100%',
-  padding: 8,
-  marginTop: 4,
-  boxSizing: 'border-box',
-} as const;
-const buttonStyle = { width: '100%', padding: 10, marginTop: 16, cursor: 'pointer' } as const;
-const errorStyle = { color: '#b00020', fontSize: 14, margin: '4px 0 0' } as const;
 
 function CredentialsForm({
   mode,
@@ -41,28 +31,35 @@ function CredentialsForm({
 
   return (
     <form onSubmit={form.handleSubmit((values) => mutation.mutate(values))} noValidate>
-      <label>
+      <label className="field">
         E-mail
-        <input type="email" autoComplete="email" style={fieldStyle} {...form.register('email')} />
+        <input type="email" autoComplete="email" {...form.register('email')} />
       </label>
-      {form.formState.errors.email && <p style={errorStyle}>E-mail inválido.</p>}
+      {form.formState.errors.email && <p className="error-text">E-mail inválido.</p>}
 
-      <label style={{ display: 'block', marginTop: 12 }}>
+      <label className="field">
         Senha
         <input
           type="password"
           autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-          style={fieldStyle}
           {...form.register('password')}
         />
       </label>
+      {mode === 'register' && !form.formState.errors.password && (
+        <p className="hint">Use pelo menos 10 caracteres.</p>
+      )}
       {form.formState.errors.password && (
-        <p style={errorStyle}>{form.formState.errors.password.message ?? 'Senha inválida.'}</p>
+        <p className="error-text">{form.formState.errors.password.message ?? 'Senha inválida.'}</p>
       )}
 
-      {mutation.isError && <p style={errorStyle}>{getErrorMessage(mutation.error)}</p>}
+      {mutation.isError && <p className="error-text">{getErrorMessage(mutation.error)}</p>}
 
-      <button type="submit" disabled={mutation.isPending} style={buttonStyle}>
+      <button
+        type="submit"
+        disabled={mutation.isPending}
+        className="btn-lg"
+        style={{ width: '100%', marginTop: 20 }}
+      >
         {mutation.isPending ? 'Enviando...' : mode === 'login' ? 'Entrar' : 'Criar conta'}
       </button>
     </form>
@@ -80,26 +77,39 @@ function CodeForm({ challengeId, onBack }: { challengeId: string; onBack: () => 
 
   return (
     <form onSubmit={form.handleSubmit((values) => mutation.mutate(values))} noValidate>
-      <p>Enviamos um código de 6 dígitos para o seu e-mail. Ele expira em 10 minutos.</p>
-      <label>
+      <p className="muted">
+        Enviamos um código de 6 dígitos para o seu e-mail. Ele expira em 10 minutos.
+      </p>
+      <label className="field">
         Código
         <input
           inputMode="numeric"
           autoComplete="one-time-code"
           maxLength={6}
-          style={fieldStyle}
+          placeholder="000000"
+          style={{ fontSize: '1.3rem', letterSpacing: '0.3em', textAlign: 'center' }}
           {...form.register('code')}
         />
       </label>
       {form.formState.errors.code && (
-        <p style={errorStyle}>{form.formState.errors.code.message ?? 'Código inválido.'}</p>
+        <p className="error-text">{form.formState.errors.code.message ?? 'Código inválido.'}</p>
       )}
-      {mutation.isError && <p style={errorStyle}>{getErrorMessage(mutation.error)}</p>}
+      {mutation.isError && <p className="error-text">{getErrorMessage(mutation.error)}</p>}
 
-      <button type="submit" disabled={mutation.isPending} style={buttonStyle}>
+      <button
+        type="submit"
+        disabled={mutation.isPending}
+        className="btn-lg"
+        style={{ width: '100%', marginTop: 20 }}
+      >
         {mutation.isPending ? 'Verificando...' : 'Confirmar'}
       </button>
-      <button type="button" onClick={onBack} style={{ ...buttonStyle, marginTop: 8 }}>
+      <button
+        type="button"
+        className="btn-ghost"
+        onClick={onBack}
+        style={{ width: '100%', marginTop: 8 }}
+      >
         Voltar
       </button>
     </form>
@@ -110,33 +120,46 @@ export default function LoginPage() {
   const [mode, setMode] = useState<Mode>('login');
   const [challengeId, setChallengeId] = useState<string | null>(null);
 
-  return (
-    <main style={{ maxWidth: 380, margin: '80px auto', padding: '0 16px' }}>
-      <h1>{mode === 'login' ? 'Entrar' : 'Criar conta'}</h1>
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('mode') === 'register') {
+      setMode('register');
+    }
+  }, []);
 
-      {challengeId ? (
-        <CodeForm challengeId={challengeId} onBack={() => setChallengeId(null)} />
-      ) : (
-        <>
-          <CredentialsForm key={mode} mode={mode} onChallenge={setChallengeId} />
-          <p style={{ marginTop: 24 }}>
-            {mode === 'login' ? 'Ainda não tem conta? ' : 'Já tem conta? '}
-            <button
-              type="button"
-              onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-              style={{
-                background: 'none',
-                border: 0,
-                color: '#0645ad',
-                cursor: 'pointer',
-                padding: 0,
-              }}
-            >
-              {mode === 'login' ? 'Criar conta' : 'Entrar'}
-            </button>
+  return (
+    <div className="auth-wrap">
+      <div className="auth-card">
+        <h1>
+          {challengeId ? 'Confirme seu e-mail' : mode === 'login' ? 'Entrar' : 'Criar sua conta'}
+        </h1>
+        {!challengeId && (
+          <p className="muted">
+            {mode === 'login'
+              ? 'Acesse o painel da sua página.'
+              : 'Comece grátis. Você poderá mudar o visual quando quiser.'}
           </p>
-        </>
-      )}
-    </main>
+        )}
+
+        {challengeId ? (
+          <CodeForm challengeId={challengeId} onBack={() => setChallengeId(null)} />
+        ) : (
+          <>
+            <CredentialsForm key={mode} mode={mode} onChallenge={setChallengeId} />
+            <p className="muted" style={{ margin: '22px 0 0', textAlign: 'center' }}>
+              {mode === 'login' ? 'Ainda não tem conta? ' : 'Já tem conta? '}
+              <a
+                href="#"
+                onClick={(event) => {
+                  event.preventDefault();
+                  setMode(mode === 'login' ? 'register' : 'login');
+                }}
+              >
+                {mode === 'login' ? 'Criar conta' : 'Entrar'}
+              </a>
+            </p>
+          </>
+        )}
+      </div>
+    </div>
   );
 }

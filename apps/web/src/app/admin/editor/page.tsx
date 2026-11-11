@@ -25,16 +25,16 @@ export default function EditorPage() {
 
   if (pageQuery.isPending || status === 401 || status === 404) {
     return (
-      <main style={{ maxWidth: 640, margin: '80px auto', padding: '0 16px' }}>
-        <p>Carregando...</p>
+      <main className="page">
+        <p className="muted">Carregando...</p>
       </main>
     );
   }
 
   if (pageQuery.isError) {
     return (
-      <main style={{ maxWidth: 640, margin: '80px auto', padding: '0 16px' }}>
-        <p>Não foi possível carregar o editor.</p>
+      <main className="page page-narrow">
+        <p role="alert">Não foi possível carregar o editor.</p>
         <button type="button" onClick={() => pageQuery.refetch()}>
           Tentar de novo
         </button>
