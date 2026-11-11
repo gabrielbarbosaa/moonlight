@@ -1,6 +1,7 @@
 import axios, { isAxiosError } from 'axios';
 import type {
   CreateTenantInput,
+  PageContent,
   LoginInput,
   RegisterInput,
   VerifyCodeInput,
@@ -44,6 +45,21 @@ export const tenantsApi = {
     api
       .get<{ slug: string; available: boolean }>('/tenants/slug-available', { params: { slug } })
       .then((res) => res.data),
+};
+
+export type PageState = {
+  draft: PageContent;
+  published: PageContent | null;
+  publishedAt: string | null;
+  updatedAt: string;
+  hasUnpublishedChanges: boolean;
+};
+
+export const pagesApi = {
+  getMine: () => api.get<PageState>('/pages/me').then((res) => res.data),
+  saveDraft: (content: PageContent) =>
+    api.put<PageState>('/pages/me/draft', content).then((res) => res.data),
+  publish: () => api.post<PageState>('/pages/me/publish').then((res) => res.data),
 };
 
 export function getErrorMessage(error: unknown): string {

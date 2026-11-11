@@ -76,6 +76,9 @@ export default function AdminPage() {
             </a>
           </p>
           <p>
+            <a href="/admin/editor">Editar página</a>
+          </p>
+          <p>
             Alternativa por caminho: <a href={`/s/${tenant.slug}`}>/s/{tenant.slug}</a>
           </p>
         </section>
