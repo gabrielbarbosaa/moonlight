@@ -5,6 +5,7 @@ import type {
   BackofficeReport,
   BackofficeStats,
   BackofficeTenant,
+  BillingState,
   BookingSettings,
   BookingSettingsInput,
   OwnerBooking,
@@ -57,6 +58,14 @@ export const tenantsApi = {
       .then((res) => res.data),
 };
 
+export const billingApi = {
+  me: () => api.get<BillingState>('/billing/me').then((res) => res.data),
+  checkout: () =>
+    api.post<{ url: string }>('/billing/checkout', { plan: 'PRO' }).then((res) => res.data),
+  cancel: () => api.post<BillingState>('/billing/cancel').then((res) => res.data),
+  resume: () => api.post<BillingState>('/billing/resume').then((res) => res.data),
+};
+
 export const bookingApi = {
   getSettings: () => api.get<BookingSettings>('/booking/me/settings').then((res) => res.data),
   saveSettings: (input: BookingSettingsInput) =>
@@ -104,6 +113,10 @@ export const pagesApi = {
 export function getErrorMessage(error: unknown): string {
   if (isAxiosError(error)) {
     if (!error.response) return 'Não foi possível falar com o servidor.';
+    const data = error.response.data as { code?: string; message?: string } | undefined;
+    if (error.response.status === 403 && data?.code === 'PLAN_LIMIT' && data.message) {
+      return `${data.message} Veja os planos em /admin/billing.`;
+    }
     if (error.response.status === 409)
       return 'Este endereço já está em uso ou o limite foi atingido.';
     if (error.response.status === 401) return 'Credenciais ou código inválidos.';

@@ -8,6 +8,7 @@ import {
 } from '@sitebuilder/schemas';
 import { createHmac } from 'node:crypto';
 import Redis from 'ioredis';
+import { EntitlementsService } from '../billing/entitlements.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { REDIS } from '../redis/redis.constants';
 import { RateLimitService } from '../redis/rate-limit.service';
@@ -37,6 +38,7 @@ export class AnalyticsService {
     @Inject(REDIS) private readonly redis: Redis,
     private readonly prisma: PrismaService,
     private readonly rateLimit: RateLimitService,
+    private readonly entitlements: EntitlementsService,
     config: ConfigService,
   ) {
     this.secret = config.getOrThrow<string>('SESSION_SECRET');
@@ -83,7 +85,8 @@ export class AnalyticsService {
     });
     if (!tenant) throw new NotFoundException('Você ainda não criou uma página');
 
-    const dates = this.lastDays(days);
+    const { entitlements } = await this.entitlements.forUser(ownerId);
+    const dates = this.lastDays(Math.min(days, entitlements.analyticsDays));
     const rows = await this.prisma.analyticsDaily.findMany({
       where: { tenantId: tenant.id, date: { gte: new Date(`${dates[0]}T00:00:00.000Z`) } },
     });

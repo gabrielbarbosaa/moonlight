@@ -2,10 +2,10 @@
 
 import { PageRenderer } from '@sitebuilder/renderer';
 import type { Block, BlockType, PageContent } from '@sitebuilder/schemas';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { getErrorMessage, pagesApi, type PageState } from '@/lib/api';
+import { billingApi, getErrorMessage, pagesApi, type PageState } from '@/lib/api';
 import { BLOCK_LABELS, createBlock, moveItem, validatePage } from '@/lib/page-editor';
 import { BlockForm } from './block-forms';
 import { ColorField, SelectField } from './fields';
@@ -22,6 +22,9 @@ export function PageEditor({ initial }: { initial: PageState }) {
   const [server, setServer] = useState<PageState>(initial);
   const [savedSnapshot, setSavedSnapshot] = useState(() => snapshotOf(initial.draft));
   const [newType, setNewType] = useState<BlockType>('text');
+
+  const billing = useQuery({ queryKey: ['billing'], queryFn: billingApi.me });
+  const maxBlocks = billing.data?.entitlements.maxBlocks ?? 50;
 
   const validation = useMemo(() => validatePage(page), [page]);
   const currentSnapshot = useMemo(() => snapshotOf(page), [page]);
@@ -203,11 +206,20 @@ export function PageEditor({ initial }: { initial: PageState }) {
             </select>
             <button
               type="button"
-              disabled={page.blocks.length >= 50}
+              disabled={page.blocks.length >= maxBlocks}
               onClick={() => setPage({ ...page, blocks: [...page.blocks, createBlock(newType)] })}
             >
               Adicionar bloco
             </button>
+            <span style={{ alignSelf: 'center', fontSize: 13, color: '#555' }}>
+              {page.blocks.length} de {maxBlocks} blocos
+              {page.blocks.length >= maxBlocks && (
+                <>
+                  {' '}
+                  · <Link href="/admin/billing">Ver planos</Link>
+                </>
+              )}
+            </span>
           </p>
         </section>
 

@@ -8,6 +8,7 @@ import {
   type PageContent,
 } from '@sitebuilder/schemas';
 import { isDeepStrictEqual } from 'node:util';
+import { EntitlementsService } from '../billing/entitlements.service';
 import { PrismaService } from '../prisma/prisma.service';
 
 type PageRecord = {
@@ -35,7 +36,10 @@ function present(record: PageRecord) {
 
 @Injectable()
 export class PagesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly entitlements: EntitlementsService,
+  ) {}
 
   async getMine(ownerId: string) {
     const page = await this.findOrCreatePage(ownerId);
@@ -43,6 +47,7 @@ export class PagesService {
   }
 
   async saveDraft(ownerId: string, content: PageContent) {
+    await this.entitlements.assertBlocks(ownerId, content.blocks.length);
     const page = await this.findOrCreatePage(ownerId);
     const updated = await this.prisma.page.update({
       where: { id: page.id },
@@ -55,6 +60,7 @@ export class PagesService {
     const page = await this.findOrCreatePage(ownerId);
     const draft = pageSchema.safeParse(page.draft);
     if (!draft.success) throw new BadRequestException('O rascunho atual é inválido');
+    await this.entitlements.assertBlocks(ownerId, draft.data.blocks.length);
 
     const [updated] = await this.prisma.$transaction([
       this.prisma.page.update({

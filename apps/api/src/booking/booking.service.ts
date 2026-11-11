@@ -8,6 +8,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { entitlementsFor, resolvePlan } from '@sitebuilder/schemas';
 import type {
   BookingConfirmation,
   BookingSettings,
@@ -19,6 +20,7 @@ import type {
   PublicBookingInfo,
   SlotsQuery,
 } from '@sitebuilder/schemas';
+import { EntitlementsService } from '../billing/entitlements.service';
 import { MailPort, type BookingMailDetails } from '../mail/mail.port';
 import { PrismaService } from '../prisma/prisma.service';
 import { RateLimitService } from '../redis/rate-limit.service';
@@ -37,7 +39,11 @@ const BOOK_LIMIT_PER_HOUR = 10;
 const PAST_BOOKINGS_LIMIT = 50;
 
 type BookableTenant = Prisma.TenantGetPayload<{
-  include: { owner: { select: { email: true } }; availability: true; bookingServices: true };
+  include: {
+    owner: { select: { email: true; subscription: { select: { plan: true; status: true } } } };
+    availability: true;
+    bookingServices: true;
+  };
 }>;
 
 function isOverlapViolation(error: unknown): boolean {
@@ -53,6 +59,7 @@ export class BookingService {
     private readonly prisma: PrismaService,
     private readonly mail: MailPort,
     private readonly rateLimit: RateLimitService,
+    private readonly entitlements: EntitlementsService,
   ) {}
 
   async getSettings(ownerId: string): Promise<BookingSettings> {
@@ -86,6 +93,9 @@ export class BookingService {
 
   async saveSettings(ownerId: string, input: BookingSettingsInput): Promise<BookingSettings> {
     const tenant = await this.ownerTenant(ownerId);
+    if (input.enabled) {
+      await this.entitlements.assertBookingServices(ownerId, input.services.length);
+    }
 
     await this.prisma.$transaction(async (tx) => {
       const existing = await tx.bookingService.findMany({ where: { tenantId: tenant.id } });
@@ -307,12 +317,16 @@ export class BookingService {
     const tenant = await this.prisma.tenant.findFirst({
       where: { slug, status: 'ACTIVE', bookingEnabled: true },
       include: {
-        owner: { select: { email: true } },
+        owner: {
+          select: { email: true, subscription: { select: { plan: true, status: true } } },
+        },
         availability: true,
         bookingServices: { where: { active: true }, orderBy: { createdAt: 'asc' } },
       },
     });
-    if (!tenant) throw new NotFoundException('Agenda não encontrada');
+    if (!tenant || !entitlementsFor(resolvePlan(tenant.owner.subscription)).booking) {
+      throw new NotFoundException('Agenda não encontrada');
+    }
     return tenant;
   }
 

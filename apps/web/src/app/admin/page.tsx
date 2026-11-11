@@ -65,7 +65,7 @@ export default function AdminPage() {
     <main style={mainStyle}>
       <h1>Painel</h1>
       <p>
-        Logado como {me.data.email}.
+        Logado como {me.data.email}. <a href="/admin/billing">Plano</a>
         {me.data.role === 'SUPERADMIN' && (
           <>
             {' '}

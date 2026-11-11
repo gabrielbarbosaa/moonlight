@@ -8,7 +8,9 @@ import {
 import { Prisma } from '@prisma/client';
 import {
   CURRENT_PAGE_SCHEMA_VERSION,
+  entitlementsFor,
   pageSchema,
+  resolvePlan,
   starterPage,
   type CreateReportInput,
   type CreateTenantInput,
@@ -107,6 +109,7 @@ export class TenantsService {
         name: true,
         status: true,
         bookingEnabled: true,
+        owner: { select: { subscription: { select: { plan: true, status: true } } } },
         page: { select: { published: true } },
       },
     });
@@ -116,7 +119,8 @@ export class TenantsService {
     return {
       slug: tenant.slug,
       name: tenant.name,
-      bookingEnabled: tenant.bookingEnabled,
+      bookingEnabled:
+        tenant.bookingEnabled && entitlementsFor(resolvePlan(tenant.owner.subscription)).booking,
       page: parsed.success ? parsed.data : null,
     };
   }

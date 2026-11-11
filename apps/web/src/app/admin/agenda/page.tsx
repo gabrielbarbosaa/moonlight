@@ -10,7 +10,7 @@ import { isAxiosError } from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { bookingApi, getErrorMessage } from '@/lib/api';
+import { billingApi, bookingApi, getErrorMessage } from '@/lib/api';
 
 const mainStyle = { maxWidth: 820, margin: '48px auto', padding: '0 16px' } as const;
 const errorStyle = { color: '#b00020' } as const;
@@ -47,6 +47,8 @@ function fromTime(value: string) {
 
 function SettingsForm({ initial }: { initial: Settings }) {
   const queryClient = useQueryClient();
+  const billing = useQuery({ queryKey: ['billing'], queryFn: billingApi.me });
+  const entitled = billing.data ? billing.data.entitlements.booking : true;
   const [settings, setSettings] = useState<Settings>(initial);
   const [errors, setErrors] = useState<string[]>([]);
   const [saved, setSaved] = useState(false);
@@ -83,9 +85,19 @@ function SettingsForm({ initial }: { initial: Settings }) {
 
   return (
     <section>
+      {!entitled && (
+        <p
+          role="alert"
+          style={{ border: '1px solid #b45309', color: '#b45309', padding: 12, borderRadius: 8 }}
+        >
+          A agenda de reservas faz parte do plano Pro. Sua agenda fica desativada para os visitantes
+          até a assinatura. <Link href="/admin/billing">Ver planos</Link>
+        </p>
+      )}
       <label style={{ display: 'block', margin: '12px 0' }}>
         <input
           type="checkbox"
+          disabled={!entitled}
           checked={settings.enabled}
           onChange={(event) => edit({ ...settings, enabled: event.target.checked })}
         />{' '}

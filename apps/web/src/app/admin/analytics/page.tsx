@@ -5,7 +5,7 @@ import { isAxiosError } from 'axios';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { analyticsApi } from '@/lib/api';
+import { analyticsApi, billingApi } from '@/lib/api';
 
 const mainStyle = { maxWidth: 760, margin: '48px auto', padding: '0 16px' } as const;
 const RANGES = [7, 30, 90];
@@ -30,9 +30,12 @@ function Kpi({ label, value }: { label: string; value: number }) {
 export default function AnalyticsPage() {
   const router = useRouter();
   const [days, setDays] = useState(30);
+  const billing = useQuery({ queryKey: ['billing'], queryFn: billingApi.me });
+  const maxDays = billing.data?.entitlements.analyticsDays ?? 90;
+  const effectiveDays = Math.min(days, maxDays);
   const query = useQuery({
-    queryKey: ['analytics', days],
-    queryFn: () => analyticsApi.summary(days),
+    queryKey: ['analytics', effectiveDays],
+    queryFn: () => analyticsApi.summary(effectiveDays),
   });
 
   const status = isAxiosError(query.error) ? query.error.response?.status : undefined;
@@ -78,12 +81,17 @@ export default function AnalyticsPage() {
             key={range}
             type="button"
             onClick={() => setDays(range)}
-            disabled={range === days}
+            disabled={range === effectiveDays || range > maxDays}
             style={{ marginRight: 6 }}
           >
             {range} dias
           </button>
         ))}
+        {maxDays < 90 && (
+          <span style={{ fontSize: 13 }}>
+            Períodos maiores no <Link href="/admin/billing">plano Pro</Link>.{' '}
+          </span>
+        )}
         <span style={{ color: '#555', fontSize: 13 }}>
           {' '}
           ({from} a {to}, em UTC)
