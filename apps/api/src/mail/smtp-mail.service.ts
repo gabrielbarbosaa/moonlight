@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createTransport, Transporter } from 'nodemailer';
-import { MailPort } from './mail.port';
+import { BookingMailDetails, MailPort } from './mail.port';
 
 @Injectable()
 export class SmtpMailService extends MailPort {
@@ -24,6 +24,34 @@ export class SmtpMailService extends MailPort {
       to,
       subject: `Seu código de acesso: ${code}`,
       text: `Seu código de acesso é ${code}. Ele expira em ${expiresInMinutes} minutos.`,
+    });
+  }
+
+  async sendBookingConfirmation(to: string, details: BookingMailDetails) {
+    await this.transporter.sendMail({
+      from: this.from,
+      to,
+      subject: `Reserva confirmada: ${details.serviceName}`,
+      text: `Olá, ${details.customerName}! Sua reserva de ${details.serviceName} com ${details.tenantName} está confirmada para ${details.when}.`,
+    });
+  }
+
+  async sendBookingNotification(to: string, details: BookingMailDetails) {
+    const notes = details.notes ? `\nObservações: ${details.notes}` : '';
+    await this.transporter.sendMail({
+      from: this.from,
+      to,
+      subject: `Nova reserva: ${details.serviceName}`,
+      text: `${details.customerName} (${details.customerEmail}) reservou ${details.serviceName} para ${details.when}.${notes}`,
+    });
+  }
+
+  async sendBookingCancellation(to: string, details: BookingMailDetails) {
+    await this.transporter.sendMail({
+      from: this.from,
+      to,
+      subject: `Reserva cancelada: ${details.serviceName}`,
+      text: `Olá, ${details.customerName}. Sua reserva de ${details.serviceName} com ${details.tenantName} para ${details.when} foi cancelada.`,
     });
   }
 }

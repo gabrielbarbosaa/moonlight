@@ -49,11 +49,15 @@ pnpm format                            # prettier --write .
 
 ### Analytics
 
-Public tenant pages mount `TrackView` (`apps/web/src/components/track-view.tsx`), which POSTs views and clicks to `/analytics/track` (links carry `data-track-link` from the renderer). The API counts them in Redis (`an:d:*` hashes, `an:u:*` HyperLogLog of daily-salted visitor hashes). `AnalyticsRollupService` consolidates past UTC days into the `analytics_daily` table on boot and via cron at 00:05 UTC. `/analytics/me` merges Postgres rows with live Redis data. CORS in `main.ts` allows `*.ROOT_DOMAIN` origins only for `/analytics/track` and the public report endpoint, without credentials.
+Public tenant pages mount `TrackView` (`apps/web/src/components/track-view.tsx`), which POSTs views and clicks to `/analytics/track` (links carry `data-track-link` from the renderer). The API counts them in Redis (`an:d:*` hashes, `an:u:*` HyperLogLog of daily-salted visitor hashes). `AnalyticsRollupService` consolidates past UTC days into the `analytics_daily` table on boot and via cron at 00:05 UTC. `/analytics/me` merges Postgres rows with live Redis data. CORS in `main.ts` allows `*.ROOT_DOMAIN` origins only for `/analytics/track`, the public report endpoint and `/booking/public/*`, without credentials.
 
 ### Backoffice and moderation
 
 Users whose email is listed in `SUPERADMIN_EMAILS` (comma-separated env var) are promoted to `SUPERADMIN` when they confirm a 2FA code. `/backoffice/*` routes use `SessionGuard` then `SuperadminGuard` (checks role in the DB). Moderation = suspending a tenant (`status`, `suspendedReason`; the public endpoint 404s for non-active tenants) plus visitor reports (`TenantReport`, public `POST /tenants/public/:slug/report`, rate-limited). Every admin action writes an `AuditLog` row. UI is at `/admin/backoffice`; the owner sees a suspension notice on `/admin`.
+
+### Booking (optional module)
+
+Per tenant: `bookingEnabled`, `timezone`, `BookingService` (name + duration), `AvailabilityRule` (weekday + minute window in the tenant timezone) and `Booking`. The double-booking guard lives in the database: the `booking` migration adds `btree_gist` and the `bookings_no_overlap` exclusion constraint (`tstzrange("startsAt","endsAt")` per tenant, only for `CONFIRMED`), plus check constraints; Prisma does not model them, so keep them when editing migrations. `BookingService` (API) computes free slots from rules minus confirmed bookings (min notice 2h, max 60 days ahead) using Intl-based helpers in `booking.time.ts`, and maps constraint violations (`23P01`) to 409. Public UI is `/s/[tenant]/agenda`; owner UI is `/admin/agenda`. Emails go through `MailPort`.
 
 ### API validation and docs
 

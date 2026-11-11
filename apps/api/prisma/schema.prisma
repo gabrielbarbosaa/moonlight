@@ -65,9 +65,70 @@ model Tenant {
   analytics AnalyticsDaily[]
   reports   TenantReport[]
 
+  bookingEnabled Boolean @default(false)
+  timezone       String  @default("America/Sao_Paulo")
+  bookingServices BookingService[]
+  availability    AvailabilityRule[]
+  bookings        Booking[]
+
   @@index([ownerId])
   @@index([status])
   @@map("tenants")
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+/// Tipo de atendimento oferecido na agenda (nome e duração).
+model BookingService {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  name            String
+  durationMinutes Int
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+
+  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bookings        Booking[]
+
+  @@index([tenantId])
+  @@map("booking_services")
+}
+
+/// Janela semanal de atendimento, em minutos desde 00:00 no fuso do tenant.
+model AvailabilityRule {
+  id          String @id @default(uuid()) @db.Uuid
+  tenantId    String @db.Uuid
+  weekday     Int
+  startMinute Int
+  endMinute   Int
+
+  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, weekday])
+  @@map("availability_rules")
+}
+
+/// Reserva. A exclusion constraint (na migration) impede sobreposição por tenant.
+model Booking {
+  id            String        @id @default(uuid()) @db.Uuid
+  tenantId      String        @db.Uuid
+  serviceId     String        @db.Uuid
+  startsAt      DateTime      @db.Timestamptz(3)
+  endsAt        DateTime      @db.Timestamptz(3)
+  customerName  String
+  customerEmail String
+  notes         String?
+  status        BookingStatus @default(CONFIRMED)
+  createdAt     DateTime      @default(now())
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  service       BookingService @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, startsAt])
+  @@map("bookings")
 }
 
 enum ReportStatus {

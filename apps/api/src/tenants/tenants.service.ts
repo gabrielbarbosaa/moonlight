@@ -102,11 +102,22 @@ export class TenantsService {
   async findPublic(slug: string) {
     const tenant = await this.prisma.tenant.findUnique({
       where: { slug },
-      select: { slug: true, name: true, status: true, page: { select: { published: true } } },
+      select: {
+        slug: true,
+        name: true,
+        status: true,
+        bookingEnabled: true,
+        page: { select: { published: true } },
+      },
     });
     if (!tenant || tenant.status !== 'ACTIVE') throw new NotFoundException('Página não encontrada');
 
     const parsed = pageSchema.safeParse(tenant.page?.published);
-    return { slug: tenant.slug, name: tenant.name, page: parsed.success ? parsed.data : null };
+    return {
+      slug: tenant.slug,
+      name: tenant.name,
+      bookingEnabled: tenant.bookingEnabled,
+      page: parsed.success ? parsed.data : null,
+    };
   }
 }

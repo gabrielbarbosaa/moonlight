@@ -99,7 +99,8 @@ export default function AdminPage() {
             </a>
           </p>
           <p>
-            <a href="/admin/editor">Editar página</a> · <a href="/admin/analytics">Analytics</a>
+            <a href="/admin/editor">Editar página</a> · <a href="/admin/analytics">Analytics</a> ·{' '}
+            <a href="/admin/agenda">Agenda</a>
           </p>
           <p>
             Alternativa por caminho: <a href={`/s/${tenant.slug}`}>/s/{tenant.slug}</a>

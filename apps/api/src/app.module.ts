@@ -5,6 +5,7 @@ import { ZodValidationPipe } from 'nestjs-zod';
 import { HealthController } from './health/health.controller';
 import { AnalyticsModule } from './analytics/analytics.module';
 import { BackofficeModule } from './backoffice/backoffice.module';
+import { BookingModule } from './booking/booking.module';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { PagesModule } from './pages/pages.module';
@@ -26,6 +27,7 @@ import { TenantsModule } from './tenants/tenants.module';
     PagesModule,
     AnalyticsModule,
     BackofficeModule,
+    BookingModule,
   ],
   providers: [{ provide: APP_PIPE, useClass: ZodValidationPipe }],
   controllers: [HealthController],

@@ -1,12 +1,18 @@
 import { PageRenderer } from '@sitebuilder/renderer';
 import type { PageContent } from '@sitebuilder/schemas';
 import { notFound } from 'next/navigation';
+import { AgendaLink } from '@/components/agenda-link';
 import { ReportLink } from '@/components/report-link';
 import { TrackView } from '@/components/track-view';
 
 const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
-type PublicTenant = { slug: string; name: string; page: PageContent | null };
+type PublicTenant = {
+  slug: string;
+  name: string;
+  bookingEnabled: boolean;
+  page: PageContent | null;
+};
 
 async function fetchTenant(slug: string): Promise<PublicTenant | null> {
   const response = await fetch(`${API_URL}/tenants/public/${encodeURIComponent(slug)}`, {
@@ -35,6 +41,7 @@ export default async function TenantPage({ params }: { params: Promise<{ tenant:
   return (
     <>
       <PageRenderer content={tenant.page} />
+      {tenant.bookingEnabled && <AgendaLink slug={tenant.slug} />}
       <TrackView slug={tenant.slug} />
       <ReportLink slug={tenant.slug} />
     </>

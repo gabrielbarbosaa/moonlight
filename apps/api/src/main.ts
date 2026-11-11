@@ -6,7 +6,8 @@ import { cleanupOpenApiDoc } from 'nestjs-zod';
 import { AppModule } from './app.module';
 import { SESSION_COOKIE } from './auth/session.service';
 
-const PUBLIC_TENANT_PATHS = /^\/(analytics\/track|tenants\/public\/[^/]+\/report)$/;
+const PUBLIC_TENANT_PATHS =
+  /^\/(analytics\/track|tenants\/public\/[^/]+\/report|booking\/public\/[^/]+(\/slots|\/book)?)$/;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -28,7 +29,7 @@ async function bootstrap() {
   app.enableCors((req: { originalUrl: string; headers: { origin?: string } }, callback) => {
     const path = req.originalUrl.split('?')[0];
     if (PUBLIC_TENANT_PATHS.test(path) && isTenantOrigin(req.headers.origin)) {
-      callback(null, { origin: true, credentials: false, methods: ['POST', 'OPTIONS'] });
+      callback(null, { origin: true, credentials: false, methods: ['GET', 'POST', 'OPTIONS'] });
       return;
     }
     callback(null, { origin: webUrl, credentials: true });

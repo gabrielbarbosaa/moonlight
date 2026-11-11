@@ -3,3 +3,4 @@ export * from './tenant';
 export * from './blocks';
 export * from './analytics';
 export * from './backoffice';
+export * from './booking';

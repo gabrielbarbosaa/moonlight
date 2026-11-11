@@ -5,6 +5,9 @@ import type {
   BackofficeReport,
   BackofficeStats,
   BackofficeTenant,
+  BookingSettings,
+  BookingSettingsInput,
+  OwnerBooking,
   Paginated,
   CreateTenantInput,
   PageContent,
@@ -52,6 +55,15 @@ export const tenantsApi = {
     api
       .get<{ slug: string; available: boolean }>('/tenants/slug-available', { params: { slug } })
       .then((res) => res.data),
+};
+
+export const bookingApi = {
+  getSettings: () => api.get<BookingSettings>('/booking/me/settings').then((res) => res.data),
+  saveSettings: (input: BookingSettingsInput) =>
+    api.put<BookingSettings>('/booking/me/settings', input).then((res) => res.data),
+  listBookings: (scope: 'upcoming' | 'past') =>
+    api.get<OwnerBooking[]>('/booking/me/bookings', { params: { scope } }).then((res) => res.data),
+  cancel: (id: string) => api.post(`/booking/me/bookings/${id}/cancel`).then(() => undefined),
 };
 
 export const backofficeApi = {
