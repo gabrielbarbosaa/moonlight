@@ -1,0 +1,95 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  SUPERADMIN
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+model User {
+  id            String     @id @default(uuid()) @db.Uuid
+  email         String     @unique
+  passwordHash  String
+  emailVerified Boolean    @default(false)
+  role          UserRole   @default(USER)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  tenants       Tenant[]
+  authCodes     AuthCode[]
+
+  @@map("users")
+}
+
+/// Códigos de 2FA enviados por e-mail. Guarda apenas o hash do código.
+model AuthCode {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @db.Uuid
+  codeHash   String
+  expiresAt  DateTime
+  attempts   Int       @default(0)
+  consumedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("auth_codes")
+}
+
+model Tenant {
+  id        String       @id @default(uuid()) @db.Uuid
+  slug      String       @unique
+  name      String
+  status    TenantStatus @default(ACTIVE)
+  ownerId   String       @db.Uuid
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  page      Page?
+
+  @@index([ownerId])
+  @@map("tenants")
+}
+
+/// A página do tenant: rascunho e versão publicada em JSONB.
+model Page {
+  id            String        @id @default(uuid()) @db.Uuid
+  tenantId      String        @unique @db.Uuid
+  draft         Json
+  published     Json?
+  schemaVersion Int           @default(1)
+  publishedAt   DateTime?
+  updatedAt     DateTime      @updatedAt
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  versions      PageVersion[]
+
+  @@map("pages")
+}
+
+/// Histórico imutável de cada publicação.
+model PageVersion {
+  id            String   @id @default(uuid()) @db.Uuid
+  pageId        String   @db.Uuid
+  content       Json
+  schemaVersion Int
+  createdAt     DateTime @default(now())
+
+  page          Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([pageId, createdAt])
+  @@map("page_versions")
+}
