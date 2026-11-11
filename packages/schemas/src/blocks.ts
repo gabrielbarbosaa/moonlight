@@ -107,6 +107,20 @@ export const pageSchema = z.object({
 });
 export type PageContent = z.infer<typeof pageSchema>;
 
+export const starterPage = (title: string): PageContent => ({
+  ...emptyPage(),
+  blocks: [
+    { id: 'header', type: 'header', variant: 'centered', props: { title } },
+    {
+      id: 'hero',
+      type: 'hero',
+      variant: 'text',
+      props: { heading: 'Bem-vindo à minha página', subheading: 'Edite este conteúdo no painel.' },
+    },
+    { id: 'footer', type: 'footer', variant: 'minimal', props: { text: title } },
+  ],
+});
+
 export const emptyPage = (): PageContent => ({
   schemaVersion: CURRENT_PAGE_SCHEMA_VERSION,
   theme: { primaryColor: '#4f46e5', background: '#ffffff', font: 'sans' },

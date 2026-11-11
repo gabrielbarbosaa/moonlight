@@ -1,8 +1,10 @@
+import { PageRenderer } from '@sitebuilder/renderer';
+import type { PageContent } from '@sitebuilder/schemas';
 import { notFound } from 'next/navigation';
 
 const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
-type PublicTenant = { slug: string; name: string };
+type PublicTenant = { slug: string; name: string; page: PageContent | null };
 
 async function fetchTenant(slug: string): Promise<PublicTenant | null> {
   const response = await fetch(`${API_URL}/tenants/public/${encodeURIComponent(slug)}`, {
@@ -19,10 +21,14 @@ export default async function TenantPage({ params }: { params: Promise<{ tenant:
 
   if (!tenant) notFound();
 
-  return (
-    <main style={{ maxWidth: 640, margin: '80px auto', padding: '0 16px' }}>
-      <h1>{tenant.name}</h1>
-      <p>O renderer de blocos entra aqui.</p>
-    </main>
-  );
+  if (!tenant.page) {
+    return (
+      <main style={{ maxWidth: 640, margin: '80px auto', padding: '0 16px' }}>
+        <h1>{tenant.name}</h1>
+        <p>Esta página ainda não foi publicada.</p>
+      </main>
+    );
+  }
+
+  return <PageRenderer content={tenant.page} />;
 }

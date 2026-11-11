@@ -45,6 +45,8 @@ pnpm format                            # prettier --write .
 - `apps/api`: NestJS 10 + Prisma 6 (PostgreSQL). Entry `src/main.ts`, `PrismaModule`/`PrismaService`, `health` controller.
 - `packages/schemas` (`@sitebuilder/schemas`): shared Zod schemas (auth, tenant, blocks, `RESERVED_SLUGS`), compiled to `dist/` and imported by both apps. Pages are stored as JSONB with a `schemaVersion` and validated by the same Zod schema on front and back, so change block shapes here, not in the apps.
 
+- `packages/renderer` (`@sitebuilder/renderer`): React `PageRenderer` that turns a `PageContent` into the public page. It re-validates with `pageSchema` and passes every URL through `safeHref`. The editor preview should reuse it. Rebuild it (and schemas) after changes, since apps consume `dist/`.
+
 ### API validation and docs
 
 Request bodies are validated by a global `ZodValidationPipe` from `nestjs-zod`. DTOs are built with `createZodDto(schema)` from the shared schemas (see `apps/api/src/auth/auth.dto.ts`), which also feeds Swagger. Swagger UI is served at `/docs` outside production.
