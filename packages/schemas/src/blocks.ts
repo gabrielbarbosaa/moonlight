@@ -1,6 +1,8 @@
 import { z } from 'zod';
+import { SOCIAL_NETWORKS } from './social';
 import { DEFAULT_THEME, themeSchema, type Theme } from './theme';
 import { safeUrlSchema } from './url';
+import { parseVideoUrl } from './video';
 
 export { safeUrlSchema };
 
@@ -84,12 +86,148 @@ export const footerBlockSchema = z.object({
   }),
 });
 
+export const SOCIAL_VARIANTS = ['icons', 'filled', 'pills', 'list'] as const;
+export const SOCIAL_COLOR_MODES = ['brand', 'theme', 'custom'] as const;
+export const LINKLIST_VARIANTS = ['list', 'thumbs', 'numbered', 'cards'] as const;
+export const CAROUSEL_VARIANTS = ['slides', 'cards'] as const;
+export const GALLERY_VARIANTS = ['grid', 'columns', 'featured'] as const;
+export const FAQ_VARIANTS = ['accordion', 'cards', 'plain'] as const;
+export const VIDEO_VARIANTS = ['inline', 'card'] as const;
+export const DIVIDER_VARIANTS = ['line', 'dots', 'space'] as const;
+
+const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/);
+
+export const socialBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal('social'),
+  variant: z.enum(SOCIAL_VARIANTS).default('icons'),
+  props: z.object({
+    colorMode: z.enum(SOCIAL_COLOR_MODES).default('brand'),
+    color: hexColor.optional(),
+    items: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          network: z.enum(SOCIAL_NETWORKS),
+          url: safeUrlSchema,
+          label: z.string().trim().max(40).optional(),
+        }),
+      )
+      .max(20),
+  }),
+});
+
+export const linklistBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal('linklist'),
+  variant: z.enum(LINKLIST_VARIANTS).default('list'),
+  props: z.object({
+    title: z.string().trim().max(80).optional(),
+    items: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          label: z.string().trim().min(1).max(80),
+          url: safeUrlSchema,
+          description: z.string().trim().max(160).optional(),
+          imageUrl: safeUrlSchema.optional(),
+        }),
+      )
+      .max(30),
+  }),
+});
+
+export const carouselBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal('carousel'),
+  variant: z.enum(CAROUSEL_VARIANTS).default('slides'),
+  props: z.object({
+    title: z.string().trim().max(80).optional(),
+    items: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          imageUrl: safeUrlSchema,
+          caption: z.string().trim().max(120).optional(),
+          linkUrl: safeUrlSchema.optional(),
+        }),
+      )
+      .max(20),
+  }),
+});
+
+export const galleryBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal('gallery'),
+  variant: z.enum(GALLERY_VARIANTS).default('grid'),
+  props: z.object({
+    title: z.string().trim().max(80).optional(),
+    items: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          imageUrl: safeUrlSchema,
+          caption: z.string().trim().max(120).optional(),
+        }),
+      )
+      .max(30),
+  }),
+});
+
+export const faqBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal('faq'),
+  variant: z.enum(FAQ_VARIANTS).default('accordion'),
+  props: z.object({
+    title: z.string().trim().max(80).optional(),
+    items: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          question: z.string().trim().min(1).max(160),
+          answer: z.string().trim().min(1).max(800),
+        }),
+      )
+      .max(20),
+  }),
+});
+
+export const videoBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal('video'),
+  variant: z.enum(VIDEO_VARIANTS).default('inline'),
+  props: z.object({
+    url: z
+      .string()
+      .trim()
+      .max(2048)
+      .refine((value) => parseVideoUrl(value) !== null, {
+        message: 'Use um link do YouTube ou do Vimeo',
+      }),
+    title: z.string().trim().max(120).optional(),
+  }),
+});
+
+export const dividerBlockSchema = z.object({
+  ...blockBase,
+  type: z.literal('divider'),
+  variant: z.enum(DIVIDER_VARIANTS).default('line'),
+  props: z.object({}),
+});
+
 export const blockSchema = z.discriminatedUnion('type', [
   headerBlockSchema,
   heroBlockSchema,
   linksBlockSchema,
   textBlockSchema,
   footerBlockSchema,
+  socialBlockSchema,
+  linklistBlockSchema,
+  carouselBlockSchema,
+  galleryBlockSchema,
+  faqBlockSchema,
+  videoBlockSchema,
+  dividerBlockSchema,
 ]);
 export type Block = z.infer<typeof blockSchema>;
 export type BlockType = Block['type'];

@@ -3,6 +3,7 @@ import type { PageContent } from '@moonlight/schemas';
 import { notFound } from 'next/navigation';
 import { AgendaLink } from '@/components/agenda-link';
 import { ReportLink } from '@/components/report-link';
+import { CarouselControls } from '@/components/carousel-controls';
 import { TrackView } from '@/components/track-view';
 
 const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -56,6 +57,7 @@ export default async function TenantPage({ params }: { params: Promise<{ tenant:
         }
       />
       <TrackView slug={tenant.slug} />
+      <CarouselControls />
     </>
   );
 }

@@ -1,10 +1,17 @@
 'use client';
 
-import type { Block, Theme } from '@moonlight/schemas';
-import { Icon } from '@/components/icons';
-import { moveItem, newId } from '@/lib/page-editor';
-import { TextField } from './fields';
+import {
+  SOCIAL_LABELS,
+  SOCIAL_NETWORKS,
+  SOCIAL_PLACEHOLDERS,
+  parseVideoUrl,
+  type Block,
+  type SocialNetwork,
+  type Theme,
+} from '@moonlight/schemas';
+import { ColorField, OptionRow, SelectField, TextField } from './fields';
 import { ImageField } from './image-field';
+import { ItemList } from './item-list';
 import { VariantPicker } from './variant-picker';
 
 type BlockOf<T extends Block['type']> = Extract<Block, { type: T }>;
@@ -84,80 +91,318 @@ function HeroForm({ block, onChange }: FormProps<'hero'>) {
 }
 
 function LinksForm({ block, onChange }: FormProps<'links'>) {
-  const items = block.props.items;
-  const setItems = (next: typeof items) => onChange({ ...block, props: { items: next } });
-
   return (
-    <>
-      {items.map((item, index) => (
-        <div
-          key={item.id}
-          style={{
-            marginTop: 12,
-            padding: '4px 12px 12px',
-            background: 'var(--surface-2)',
-            border: '1px solid var(--border)',
-            borderRadius: 'var(--radius-sm)',
-          }}
-        >
-          <div className="row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
-            <strong style={{ fontSize: '0.85rem' }}>Link {index + 1}</strong>
-            <span className="block-actions">
-              <button
-                type="button"
-                className="icon-button"
-                aria-label={`Subir link ${index + 1}`}
-                disabled={index === 0}
-                onClick={() => setItems(moveItem(items, index, index - 1))}
-              >
-                <Icon name="up" />
-              </button>
-              <button
-                type="button"
-                className="icon-button"
-                aria-label={`Descer link ${index + 1}`}
-                disabled={index === items.length - 1}
-                onClick={() => setItems(moveItem(items, index, index + 1))}
-              >
-                <Icon name="down" />
-              </button>
-              <button
-                type="button"
-                className="icon-button"
-                aria-label={`Remover link ${index + 1}`}
-                onClick={() => setItems(items.filter((_, i) => i !== index))}
-              >
-                <Icon name="trash" />
-              </button>
-            </span>
-          </div>
+    <ItemList
+      items={block.props.items}
+      onChange={(items) => onChange({ ...block, props: { items } })}
+      itemName="Link"
+      max={30}
+      addLabel="Adicionar link"
+      createItem={(id) => ({ id, label: '', url: '' })}
+    >
+      {(item, update) => (
+        <>
           <TextField
             label="Texto"
             value={item.label}
             maxLength={80}
-            onChange={(label) =>
-              setItems(items.map((it, i) => (i === index ? { ...it, label } : it)))
-            }
+            onChange={(label) => update({ label })}
           />
           <TextField
             label="URL"
             value={item.url}
             placeholder="https://"
-            onChange={(url) => setItems(items.map((it, i) => (i === index ? { ...it, url } : it)))}
+            onChange={(url) => update({ url })}
           />
-        </div>
-      ))}
-      <button
-        type="button"
-        disabled={items.length >= 30}
-        style={{ marginTop: 12 }}
-        onClick={() => setItems([...items, { id: newId(), label: '', url: '' }])}
+        </>
+      )}
+    </ItemList>
+  );
+}
+
+function SectionTitleField({
+  value,
+  onChange,
+}: {
+  value: string | undefined;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <TextField
+      label="Título da seção (opcional)"
+      value={value}
+      maxLength={80}
+      onChange={onChange}
+    />
+  );
+}
+
+const NETWORK_OPTIONS = SOCIAL_NETWORKS.map((network) => ({
+  value: network,
+  label: SOCIAL_LABELS[network],
+}));
+
+const COLOR_MODE_OPTIONS = [
+  { value: 'brand', label: 'Cores das marcas' },
+  { value: 'theme', label: 'Cor do tema' },
+  { value: 'custom', label: 'Minha cor' },
+] as const;
+
+function normalizeSocialUrl(network: SocialNetwork, value: string) {
+  if (network === 'email' && /^[^\s@:/]+@[^\s@]+$/.test(value.trim()))
+    return `mailto:${value.trim()}`;
+  return value;
+}
+
+function SocialForm({ block, onChange }: FormProps<'social'>) {
+  const set = (patch: Partial<BlockOf<'social'>['props']>) =>
+    onChange({ ...block, props: { ...block.props, ...patch } });
+
+  return (
+    <>
+      <OptionRow
+        label="Cor dos ícones"
+        value={block.props.colorMode}
+        options={COLOR_MODE_OPTIONS}
+        onChange={(colorMode) => set({ colorMode })}
+      />
+      {block.props.colorMode === 'custom' && (
+        <ColorField
+          label="Cor dos ícones"
+          value={block.props.color ?? '#6366f1'}
+          onChange={(color) => set({ color })}
+        />
+      )}
+      <ItemList
+        items={block.props.items}
+        onChange={(items) => set({ items })}
+        itemName="Rede"
+        max={20}
+        addLabel="Adicionar rede"
+        createItem={(id) => ({ id, network: 'instagram' as SocialNetwork, url: '' })}
       >
-        <Icon name="plus" />
-        Adicionar link
-      </button>
+        {(item, update) => (
+          <>
+            <SelectField
+              label="Rede"
+              value={item.network}
+              options={NETWORK_OPTIONS}
+              onChange={(network) => update({ network: network as SocialNetwork })}
+            />
+            <TextField
+              label="Link"
+              value={item.url}
+              placeholder={SOCIAL_PLACEHOLDERS[item.network]}
+              onChange={(url) => update({ url: normalizeSocialUrl(item.network, url) })}
+            />
+            <TextField
+              label="Nome (opcional)"
+              value={item.label}
+              maxLength={40}
+              hint="Aparece nas aparências com nome."
+              onChange={(label) => update({ label })}
+            />
+          </>
+        )}
+      </ItemList>
     </>
   );
+}
+
+function LinklistForm({ block, onChange }: FormProps<'linklist'>) {
+  return (
+    <>
+      <SectionTitleField
+        value={block.props.title}
+        onChange={(title) => onChange({ ...block, props: { ...block.props, title } })}
+      />
+      <ItemList
+        items={block.props.items}
+        onChange={(items) => onChange({ ...block, props: { ...block.props, items } })}
+        itemName="Link"
+        max={30}
+        addLabel="Adicionar link"
+        createItem={(id) => ({ id, label: '', url: '' })}
+      >
+        {(item, update) => (
+          <>
+            <TextField
+              label="Texto"
+              value={item.label}
+              maxLength={80}
+              onChange={(label) => update({ label })}
+            />
+            <TextField
+              label="URL"
+              value={item.url}
+              placeholder="https://"
+              onChange={(url) => update({ url })}
+            />
+            <TextField
+              label="Descrição (opcional)"
+              value={item.description}
+              maxLength={160}
+              onChange={(description) => update({ description })}
+            />
+            {block.variant === 'thumbs' && (
+              <ImageField
+                label="Miniatura"
+                value={item.imageUrl}
+                onChange={(imageUrl) => update({ imageUrl })}
+              />
+            )}
+          </>
+        )}
+      </ItemList>
+    </>
+  );
+}
+
+function CarouselForm({ block, onChange }: FormProps<'carousel'>) {
+  return (
+    <>
+      <SectionTitleField
+        value={block.props.title}
+        onChange={(title) => onChange({ ...block, props: { ...block.props, title } })}
+      />
+      <ItemList
+        items={block.props.items}
+        onChange={(items) => onChange({ ...block, props: { ...block.props, items } })}
+        itemName="Imagem"
+        max={20}
+        addLabel="Adicionar imagem"
+        createItem={(id) => ({ id, imageUrl: '' })}
+      >
+        {(item, update) => (
+          <>
+            <ImageField
+              label="Imagem"
+              value={item.imageUrl}
+              onChange={(imageUrl) => update({ imageUrl })}
+            />
+            <TextField
+              label="Legenda (opcional)"
+              value={item.caption}
+              maxLength={120}
+              onChange={(caption) => update({ caption })}
+            />
+            <TextField
+              label="Link ao clicar (opcional)"
+              value={item.linkUrl}
+              placeholder="https://"
+              onChange={(linkUrl) => update({ linkUrl })}
+            />
+          </>
+        )}
+      </ItemList>
+    </>
+  );
+}
+
+function GalleryForm({ block, onChange }: FormProps<'gallery'>) {
+  return (
+    <>
+      <SectionTitleField
+        value={block.props.title}
+        onChange={(title) => onChange({ ...block, props: { ...block.props, title } })}
+      />
+      <ItemList
+        items={block.props.items}
+        onChange={(items) => onChange({ ...block, props: { ...block.props, items } })}
+        itemName="Foto"
+        max={30}
+        addLabel="Adicionar foto"
+        createItem={(id) => ({ id, imageUrl: '' })}
+      >
+        {(item, update) => (
+          <>
+            <ImageField
+              label="Foto"
+              value={item.imageUrl}
+              onChange={(imageUrl) => update({ imageUrl })}
+            />
+            <TextField
+              label="Descrição da imagem (opcional)"
+              value={item.caption}
+              maxLength={120}
+              hint="Ajuda quem usa leitor de tela."
+              onChange={(caption) => update({ caption })}
+            />
+          </>
+        )}
+      </ItemList>
+    </>
+  );
+}
+
+function FaqForm({ block, onChange }: FormProps<'faq'>) {
+  return (
+    <>
+      <SectionTitleField
+        value={block.props.title}
+        onChange={(title) => onChange({ ...block, props: { ...block.props, title } })}
+      />
+      <ItemList
+        items={block.props.items}
+        onChange={(items) => onChange({ ...block, props: { ...block.props, items } })}
+        itemName="Pergunta"
+        max={20}
+        addLabel="Adicionar pergunta"
+        createItem={(id) => ({ id, question: '', answer: '' })}
+      >
+        {(item, update) => (
+          <>
+            <TextField
+              label="Pergunta"
+              value={item.question}
+              maxLength={160}
+              onChange={(question) => update({ question })}
+            />
+            <TextField
+              label="Resposta"
+              multiline
+              value={item.answer}
+              maxLength={800}
+              onChange={(answer) => update({ answer })}
+            />
+          </>
+        )}
+      </ItemList>
+    </>
+  );
+}
+
+function VideoForm({ block, onChange }: FormProps<'video'>) {
+  const set = (patch: Partial<BlockOf<'video'>['props']>) =>
+    onChange({ ...block, props: { ...block.props, ...patch } });
+  const invalid = block.props.url.trim() !== '' && parseVideoUrl(block.props.url) === null;
+
+  return (
+    <>
+      <TextField
+        label="Link do vídeo"
+        value={block.props.url}
+        placeholder="https://www.youtube.com/watch?v=..."
+        hint="Aceita links do YouTube e do Vimeo."
+        onChange={(url) => set({ url })}
+      />
+      {invalid && (
+        <p className="error-text" role="alert">
+          Este link não parece ser do YouTube nem do Vimeo.
+        </p>
+      )}
+      <TextField
+        label="Título (opcional)"
+        value={block.props.title}
+        maxLength={120}
+        onChange={(title) => set({ title })}
+      />
+    </>
+  );
+}
+
+function DividerForm() {
+  return <p className="hint">Escolha a aparência acima. Este bloco não tem texto.</p>;
 }
 
 function TextForm({ block, onChange }: FormProps<'text'>) {
@@ -235,6 +480,55 @@ export function BlockForm({
         <>
           {picker}
           <FooterForm block={block} onChange={onChange} />
+        </>
+      );
+    case 'social':
+      return (
+        <>
+          {picker}
+          <SocialForm block={block} onChange={onChange} />
+        </>
+      );
+    case 'linklist':
+      return (
+        <>
+          {picker}
+          <LinklistForm block={block} onChange={onChange} />
+        </>
+      );
+    case 'carousel':
+      return (
+        <>
+          {picker}
+          <CarouselForm block={block} onChange={onChange} />
+        </>
+      );
+    case 'gallery':
+      return (
+        <>
+          {picker}
+          <GalleryForm block={block} onChange={onChange} />
+        </>
+      );
+    case 'faq':
+      return (
+        <>
+          {picker}
+          <FaqForm block={block} onChange={onChange} />
+        </>
+      );
+    case 'video':
+      return (
+        <>
+          {picker}
+          <VideoForm block={block} onChange={onChange} />
+        </>
+      );
+    case 'divider':
+      return (
+        <>
+          {picker}
+          <DividerForm />
         </>
       );
   }

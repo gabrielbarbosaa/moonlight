@@ -1,10 +1,11 @@
 import type { CSSProperties, ReactElement } from 'react';
-import type { Block } from '@moonlight/schemas';
-import { safeHref } from './utils';
+import { SOCIAL_LABELS, parseVideoUrl, type Block, type SocialNetwork } from '@moonlight/schemas';
+import { BRAND_ICONS } from './brand-icons';
+import { luminance, readableTextColor, safeHref } from './utils';
 
 type BlockOf<T extends Block['type']> = Extract<Block, { type: T }>;
 
-export type RenderOptions = { fallbackImage?: string };
+export type RenderOptions = { fallbackImage?: string; thumbnail?: boolean };
 
 function HeaderBlock({ block, options }: { block: BlockOf<'header'>; options: RenderOptions }) {
   const avatar = safeHref(block.props.avatarUrl) ?? options.fallbackImage;
@@ -134,8 +135,303 @@ function FooterBlock({ block }: { block: BlockOf<'footer'> }) {
   );
 }
 
+const STROKE_ICONS: Record<string, ReactElement> = {
+  email: (
+    <>
+      <rect x="3" y="5" width="18" height="14" rx="2" />
+      <path d="m3.5 7 8.5 6.5L20.5 7" />
+    </>
+  ),
+  website: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3c2.6 2.4 4 5.6 4 9s-1.4 6.6-4 9c-2.6-2.4-4-5.6-4-9s1.4-6.6 4-9z" />
+    </>
+  ),
+};
+
+function SocialIcon({ network }: { network: SocialNetwork }) {
+  const stroke = STROKE_ICONS[network];
+  if (stroke) {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        {stroke}
+      </svg>
+    );
+  }
+  const brand = BRAND_ICONS[network];
+  if (!brand) return null;
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d={brand.path} />
+    </svg>
+  );
+}
+
+function socialColors(
+  network: SocialNetwork,
+  mode: BlockOf<'social'>['props']['colorMode'],
+  custom: string | undefined,
+): CSSProperties {
+  if (mode === 'brand' && BRAND_ICONS[network]) {
+    const raw = BRAND_ICONS[network].hex;
+    const light = luminance(raw);
+    return {
+      '--ic': light < 0.18 || light > 0.78 ? 'var(--sb-text)' : raw,
+      '--ib': raw,
+      '--ibt': readableTextColor(raw),
+    } as CSSProperties;
+  }
+  const base = mode === 'custom' && custom ? custom : 'var(--sb-primary)';
+  const onBase = mode === 'custom' && custom ? readableTextColor(custom) : 'var(--sb-on-primary)';
+  return { '--ic': base, '--ib': base, '--ibt': onBase } as CSSProperties;
+}
+
+function SocialBlock({ block }: { block: BlockOf<'social'> }) {
+  const showLabel = block.variant === 'pills' || block.variant === 'list';
+  const items = block.props.items.flatMap((item) => {
+    const href = safeHref(item.url);
+    return href ? [{ item, href }] : [];
+  });
+  if (items.length === 0) return null;
+
+  return (
+    <nav className="sbp-block sbp-social" data-variant={block.variant} aria-label="Redes sociais">
+      {items.map(({ item, href }) => {
+        const name = item.label || SOCIAL_LABELS[item.network];
+        return (
+          <a
+            key={item.id}
+            className="sbp-social-item"
+            href={href}
+            rel="noopener noreferrer me"
+            aria-label={name}
+            title={name}
+            data-track-link={item.id}
+            style={socialColors(item.network, block.props.colorMode, block.props.color)}
+          >
+            <SocialIcon network={item.network} />
+            {showLabel && <span>{name}</span>}
+          </a>
+        );
+      })}
+    </nav>
+  );
+}
+
+function SectionTitle({ title }: { title?: string }) {
+  return title ? <h2 className="sbp-section-title">{title}</h2> : null;
+}
+
+function LinklistBlock({ block, options }: { block: BlockOf<'linklist'>; options: RenderOptions }) {
+  const items = block.props.items.flatMap((item) => {
+    const href = safeHref(item.url);
+    return href ? [{ item, href }] : [];
+  });
+  if (items.length === 0) return null;
+
+  return (
+    <section className="sbp-block sbp-linklist">
+      <SectionTitle title={block.props.title} />
+      <nav className="sbp-ll" data-variant={block.variant}>
+        {items.map(({ item, href }, index) => {
+          const image = safeHref(item.imageUrl) ?? options.fallbackImage;
+          return (
+            <a
+              key={item.id}
+              className="sbp-ll-item"
+              href={href}
+              rel="noopener noreferrer"
+              data-track-link={item.id}
+            >
+              {block.variant === 'thumbs' && image && (
+                <img className="sbp-ll-thumb" src={image} alt="" loading="lazy" />
+              )}
+              {block.variant === 'numbered' && <span className="sbp-ll-num">{index + 1}</span>}
+              <span className="sbp-ll-text">
+                <span className="sbp-ll-label">{item.label}</span>
+                {item.description && <span className="sbp-ll-desc">{item.description}</span>}
+              </span>
+            </a>
+          );
+        })}
+      </nav>
+    </section>
+  );
+}
+
+function CarouselBlock({ block, options }: { block: BlockOf<'carousel'>; options: RenderOptions }) {
+  const slides = block.props.items.flatMap((item) => {
+    const src = safeHref(item.imageUrl) ?? options.fallbackImage;
+    return src ? [{ item, src }] : [];
+  });
+  if (slides.length === 0) return null;
+
+  return (
+    <section className="sbp-block sbp-carousel" data-variant={block.variant}>
+      <SectionTitle title={block.props.title} />
+      <div className="sbp-carousel-frame">
+        <ul
+          className="sbp-carousel-track"
+          tabIndex={0}
+          aria-label={block.props.title || 'Carrossel de imagens'}
+        >
+          {slides.map(({ item, src }) => {
+            const href = safeHref(item.linkUrl);
+            const image = <img src={src} alt={item.caption ?? ''} loading="lazy" />;
+            return (
+              <li key={item.id} className="sbp-carousel-slide">
+                <figure>
+                  {href ? (
+                    <a href={href} rel="noopener noreferrer" data-track-link={item.id}>
+                      {image}
+                    </a>
+                  ) : (
+                    image
+                  )}
+                  {item.caption && <figcaption>{item.caption}</figcaption>}
+                </figure>
+              </li>
+            );
+          })}
+        </ul>
+        {slides.length > 1 && !options.thumbnail && (
+          <>
+            <button
+              type="button"
+              className="sbp-carousel-nav"
+              data-carousel-dir="-1"
+              data-side="prev"
+              aria-label="Anterior"
+            >
+              &#8249;
+            </button>
+            <button
+              type="button"
+              className="sbp-carousel-nav"
+              data-carousel-dir="1"
+              data-side="next"
+              aria-label="Próxima"
+            >
+              &#8250;
+            </button>
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function GalleryBlock({ block, options }: { block: BlockOf<'gallery'>; options: RenderOptions }) {
+  const tiles = block.props.items.flatMap((item) => {
+    const src = safeHref(item.imageUrl) ?? options.fallbackImage;
+    return src ? [{ item, src, full: safeHref(item.imageUrl) }] : [];
+  });
+  if (tiles.length === 0) return null;
+
+  return (
+    <section className="sbp-block sbp-gallery" data-variant={block.variant}>
+      <SectionTitle title={block.props.title} />
+      <ul className="sbp-gallery-grid">
+        {tiles.map(({ item, src, full }) => {
+          const image = <img src={src} alt={item.caption ?? ''} loading="lazy" />;
+          return (
+            <li key={item.id}>
+              {full ? (
+                <a href={full} target="_blank" rel="noopener noreferrer">
+                  {image}
+                </a>
+              ) : (
+                image
+              )}
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+function FaqBlock({ block }: { block: BlockOf<'faq'> }) {
+  if (block.props.items.length === 0) return null;
+
+  return (
+    <section className="sbp-block sbp-faq" data-variant={block.variant}>
+      <SectionTitle title={block.props.title} />
+      {block.props.items.map((item) =>
+        block.variant === 'plain' ? (
+          <div key={item.id} className="sbp-faq-item">
+            <h3 className="sbp-faq-q">{item.question}</h3>
+            <p className="sbp-faq-a">{item.answer}</p>
+          </div>
+        ) : (
+          <details key={item.id} className="sbp-faq-item">
+            <summary className="sbp-faq-q">{item.question}</summary>
+            <p className="sbp-faq-a">{item.answer}</p>
+          </details>
+        ),
+      )}
+    </section>
+  );
+}
+
+function VideoBlock({ block, options }: { block: BlockOf<'video'>; options: RenderOptions }) {
+  const video = parseVideoUrl(block.props.url);
+  if (!video) return null;
+  const title = block.props.title || 'Vídeo';
+
+  return (
+    <section className="sbp-block sbp-video" data-variant={block.variant}>
+      <div className="sbp-video-frame" data-thumbnail={options.thumbnail ? 'true' : undefined}>
+        {options.thumbnail ? (
+          <span className="sbp-video-play" aria-hidden="true" />
+        ) : (
+          <iframe
+            src={video.src}
+            title={title}
+            loading="lazy"
+            allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+            allowFullScreen
+            referrerPolicy="strict-origin-when-cross-origin"
+            sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+          />
+        )}
+      </div>
+      {block.props.title && block.variant === 'card' && (
+        <p className="sbp-video-title">{block.props.title}</p>
+      )}
+    </section>
+  );
+}
+
+function DividerBlock({ block }: { block: BlockOf<'divider'> }) {
+  return <div className="sbp-block sbp-divider" data-variant={block.variant} aria-hidden="true" />;
+}
+
 export function renderBlock(block: Block, options: RenderOptions = {}): ReactElement | null {
   switch (block.type) {
+    case 'social':
+      return <SocialBlock key={block.id} block={block} />;
+    case 'linklist':
+      return <LinklistBlock key={block.id} block={block} options={options} />;
+    case 'carousel':
+      return <CarouselBlock key={block.id} block={block} options={options} />;
+    case 'gallery':
+      return <GalleryBlock key={block.id} block={block} options={options} />;
+    case 'faq':
+      return <FaqBlock key={block.id} block={block} />;
+    case 'video':
+      return <VideoBlock key={block.id} block={block} options={options} />;
+    case 'divider':
+      return <DividerBlock key={block.id} block={block} />;
     case 'header':
       return <HeaderBlock key={block.id} block={block} options={options} />;
     case 'hero':

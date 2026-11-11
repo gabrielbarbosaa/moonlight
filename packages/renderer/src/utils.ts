@@ -7,7 +7,7 @@ export function safeHref(value: string | undefined): string | undefined {
   return result.success ? new URL(result.data).href : undefined;
 }
 
-function luminance(hex: string): number {
+export function luminance(hex: string): number {
   const clean = hex.replace('#', '');
   const r = parseInt(clean.slice(0, 2), 16);
   const g = parseInt(clean.slice(2, 4), 16);

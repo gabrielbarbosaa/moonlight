@@ -120,6 +120,42 @@ const PATHS: Record<string, ReactNode> = {
       <path d="M3 16h18" />
     </>
   ),
+  share: (
+    <>
+      <circle cx="6" cy="12" r="2.5" />
+      <circle cx="18" cy="6" r="2.5" />
+      <circle cx="18" cy="18" r="2.5" />
+      <path d="M8.2 10.8l7.6-3.6M8.2 13.2l7.6 3.6" />
+    </>
+  ),
+  list: <path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01" />,
+  images: (
+    <>
+      <rect x="6" y="5" width="12" height="14" rx="2" />
+      <path d="M2 8v8M22 8v8" />
+    </>
+  ),
+  grid: (
+    <>
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="7" height="7" rx="1" />
+    </>
+  ),
+  help: (
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.5a2.5 2.5 0 114 2c-.9.6-1.5 1.1-1.5 2.2M12 17h.01" />
+    </>
+  ),
+  video: (
+    <>
+      <rect x="2" y="5" width="20" height="14" rx="3" />
+      <path d="M10 9.5v5l4.5-2.5z" />
+    </>
+  ),
+  minus: <path d="M4 12h16" />,
   star: <path d="M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z" />,
   sun: (
     <>

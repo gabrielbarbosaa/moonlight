@@ -6,6 +6,13 @@ export const BLOCK_LABELS: Record<BlockType, string> = {
   links: 'Links',
   text: 'Texto',
   footer: 'Rodapé',
+  social: 'Redes sociais',
+  linklist: 'Lista de links',
+  carousel: 'Carrossel',
+  gallery: 'Galeria',
+  faq: 'Perguntas frequentes',
+  video: 'Vídeo',
+  divider: 'Divisor',
 };
 
 export const BLOCK_ICONS = {
@@ -14,6 +21,13 @@ export const BLOCK_ICONS = {
   links: 'link',
   text: 'type',
   footer: 'footer',
+  social: 'share',
+  linklist: 'list',
+  carousel: 'images',
+  gallery: 'grid',
+  faq: 'help',
+  video: 'video',
+  divider: 'minus',
 } as const;
 
 export const BLOCK_HINTS: Record<BlockType, string> = {
@@ -22,6 +36,13 @@ export const BLOCK_HINTS: Record<BlockType, string> = {
   links: 'Botões e links para onde você quiser.',
   text: 'Um parágrafo, citação ou aviso.',
   footer: 'Uma linha final, como direitos ou contato.',
+  social: 'Ícones das suas redes, coloridos ou na cor que você escolher.',
+  linklist: 'Uma lista de links com descrição e miniatura.',
+  carousel: 'Imagens que deslizam, com legenda e link.',
+  gallery: 'Uma grade de fotos.',
+  faq: 'Perguntas e respostas que abrem e fecham.',
+  video: 'Um vídeo do YouTube ou do Vimeo.',
+  divider: 'Uma linha, pontos ou um respiro entre seções.',
 };
 
 export const VARIANTS: Record<BlockType, { value: string; label: string }[]> = {
@@ -58,6 +79,41 @@ export const VARIANTS: Record<BlockType, { value: string; label: string }[]> = {
     { value: 'columns', label: 'À esquerda' },
     { value: 'band', label: 'Faixa' },
     { value: 'plain', label: 'Simples' },
+  ],
+  social: [
+    { value: 'icons', label: 'Ícones' },
+    { value: 'filled', label: 'Ícones preenchidos' },
+    { value: 'pills', label: 'Com nome' },
+    { value: 'list', label: 'Lista' },
+  ],
+  linklist: [
+    { value: 'list', label: 'Lista' },
+    { value: 'thumbs', label: 'Com miniatura' },
+    { value: 'numbered', label: 'Numerada' },
+    { value: 'cards', label: 'Cartões' },
+  ],
+  carousel: [
+    { value: 'slides', label: 'Um por vez' },
+    { value: 'cards', label: 'Vários cartões' },
+  ],
+  gallery: [
+    { value: 'grid', label: 'Grade' },
+    { value: 'columns', label: 'Colunas' },
+    { value: 'featured', label: 'Destaque' },
+  ],
+  faq: [
+    { value: 'accordion', label: 'Sanfona' },
+    { value: 'cards', label: 'Cartões' },
+    { value: 'plain', label: 'Aberto' },
+  ],
+  video: [
+    { value: 'inline', label: 'Simples' },
+    { value: 'card', label: 'Cartão' },
+  ],
+  divider: [
+    { value: 'line', label: 'Linha' },
+    { value: 'dots', label: 'Pontos' },
+    { value: 'space', label: 'Espaço' },
   ],
 };
 
@@ -102,6 +158,94 @@ export function sampleBlock(type: BlockType, variant: string): Block {
       };
     case 'footer':
       return { id, type, variant: variant as never, props: { text: 'Rodapé da página' } };
+    case 'social':
+      return {
+        id,
+        type,
+        variant: variant as never,
+        props: {
+          colorMode: 'brand',
+          items: [
+            { id: 'a', network: 'instagram', url: 'https://example.com/1' },
+            { id: 'b', network: 'youtube', url: 'https://example.com/2' },
+            { id: 'c', network: 'github', url: 'https://example.com/3' },
+            { id: 'd', network: 'email', url: 'mailto:oi@example.com' },
+          ],
+        },
+      };
+    case 'linklist':
+      return {
+        id,
+        type,
+        variant: variant as never,
+        props: {
+          items: [
+            {
+              id: 'a',
+              label: 'Meu portfólio',
+              url: 'https://example.com/1',
+              description: 'Trabalhos recentes',
+              imageUrl: '',
+            },
+            {
+              id: 'b',
+              label: 'Newsletter',
+              url: 'https://example.com/2',
+              description: 'Toda semana',
+              imageUrl: '',
+            },
+          ],
+        },
+      };
+    case 'carousel':
+      return {
+        id,
+        type,
+        variant: variant as never,
+        props: {
+          items: [
+            { id: 'a', imageUrl: '', caption: 'Primeira' },
+            { id: 'b', imageUrl: '', caption: 'Segunda' },
+            { id: 'c', imageUrl: '', caption: 'Terceira' },
+          ],
+        },
+      };
+    case 'gallery':
+      return {
+        id,
+        type,
+        variant: variant as never,
+        props: {
+          items: [
+            { id: 'a', imageUrl: '' },
+            { id: 'b', imageUrl: '' },
+            { id: 'c', imageUrl: '' },
+            { id: 'd', imageUrl: '' },
+            { id: 'e', imageUrl: '' },
+          ],
+        },
+      };
+    case 'faq':
+      return {
+        id,
+        type,
+        variant: variant as never,
+        props: {
+          items: [
+            { id: 'a', question: 'Como funciona?', answer: 'Uma resposta curta e direta.' },
+            { id: 'b', question: 'Quanto custa?', answer: 'Outra resposta de exemplo.' },
+          ],
+        },
+      };
+    case 'video':
+      return {
+        id,
+        type,
+        variant: variant as never,
+        props: { url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', title: 'Meu vídeo' },
+      };
+    case 'divider':
+      return { id, type, variant: variant as never, props: {} };
   }
 }
 
@@ -117,7 +261,27 @@ export function describeBlock(block: Block): string {
       return block.props.content.trim().slice(0, 48) || 'Texto vazio';
     case 'footer':
       return block.props.text?.trim() || 'Rodapé vazio';
+    case 'social':
+      return count(block.props.items.length, 'rede', 'redes');
+    case 'linklist':
+      return block.props.title?.trim() || count(block.props.items.length, 'link', 'links');
+    case 'carousel':
+      return block.props.title?.trim() || count(block.props.items.length, 'imagem', 'imagens');
+    case 'gallery':
+      return block.props.title?.trim() || count(block.props.items.length, 'foto', 'fotos');
+    case 'faq':
+      return block.props.title?.trim() || count(block.props.items.length, 'pergunta', 'perguntas');
+    case 'video':
+      return block.props.title?.trim() || block.props.url || 'Sem vídeo';
+    case 'divider':
+      return DIVIDER_LABELS[block.variant];
   }
+}
+
+const DIVIDER_LABELS = { line: 'Linha', dots: 'Pontos', space: 'Espaço' } as const;
+
+function count(total: number, singular: string, plural: string) {
+  return `${total} ${total === 1 ? singular : plural}`;
 }
 
 export function mixHex(from: string, to: string, amount: number): string {
@@ -146,6 +310,20 @@ export function createBlock(type: BlockType): Block {
       return { id, type, variant: 'paragraph', props: { content: '' } };
     case 'footer':
       return { id, type, variant: 'minimal', props: { text: '' } };
+    case 'social':
+      return { id, type, variant: 'icons', props: { colorMode: 'brand', items: [] } };
+    case 'linklist':
+      return { id, type, variant: 'list', props: { items: [] } };
+    case 'carousel':
+      return { id, type, variant: 'slides', props: { items: [] } };
+    case 'gallery':
+      return { id, type, variant: 'grid', props: { items: [] } };
+    case 'faq':
+      return { id, type, variant: 'accordion', props: { items: [] } };
+    case 'video':
+      return { id, type, variant: 'inline', props: { url: '' } };
+    case 'divider':
+      return { id, type, variant: 'line', props: {} };
   }
 }
 
@@ -158,6 +336,24 @@ const OPTIONAL_PROPS = new Set([
   'text',
 ]);
 
+const OPTIONAL_BLOCK_PROPS: Partial<Record<BlockType, string[]>> = {
+  social: ['color'],
+  linklist: ['title'],
+  carousel: ['title'],
+  gallery: ['title'],
+  faq: ['title'],
+  video: ['title'],
+};
+
+const OPTIONAL_ITEM_PROPS: Partial<Record<BlockType, string[]>> = {
+  social: ['label'],
+  linklist: ['description', 'imageUrl'],
+  carousel: ['caption', 'linkUrl'],
+  gallery: ['caption'],
+};
+
+const isBlank = (value: unknown) => typeof value === 'string' && value.trim() === '';
+
 const OPTIONAL_THEME = ['textColor', 'backgroundEnd', 'backgroundImageUrl'] as const;
 
 const THEME_FIELD_LABELS: Record<string, string> = {
@@ -166,6 +362,27 @@ const THEME_FIELD_LABELS: Record<string, string> = {
   backgroundEnd: 'segunda cor do degradê',
   backgroundImageUrl: 'imagem de fundo',
   textColor: 'cor do texto',
+};
+
+const PROP_LABELS: Record<string, string> = {
+  title: 'título',
+  heading: 'título',
+  subheading: 'subtítulo',
+  avatarUrl: 'foto',
+  imageUrl: 'imagem',
+  linkUrl: 'link',
+  url: 'link',
+  label: 'texto',
+  caption: 'legenda',
+  description: 'descrição',
+  network: 'rede',
+  question: 'pergunta',
+  answer: 'resposta',
+  ctaLabel: 'texto do botão',
+  ctaUrl: 'link do botão',
+  content: 'conteúdo',
+  text: 'texto',
+  color: 'cor',
 };
 
 export function normalizePage(page: PageContent): PageContent {
@@ -179,11 +396,23 @@ export function normalizePage(page: PageContent): PageContent {
     ...page,
     theme: theme as PageContent['theme'],
     blocks: page.blocks.map((block) => {
+      const optional = new Set([...OPTIONAL_PROPS, ...(OPTIONAL_BLOCK_PROPS[block.type] ?? [])]);
+      const optionalItem = new Set(OPTIONAL_ITEM_PROPS[block.type] ?? []);
       const props = Object.fromEntries(
-        Object.entries(block.props).filter(
-          ([key, value]) =>
-            !(OPTIONAL_PROPS.has(key) && typeof value === 'string' && value.trim() === ''),
-        ),
+        Object.entries(block.props)
+          .filter(([key, value]) => !(optional.has(key) && isBlank(value)))
+          .map(([key, value]) => [
+            key,
+            key === 'items' && Array.isArray(value)
+              ? value.map((item: Record<string, unknown>) =>
+                  Object.fromEntries(
+                    Object.entries(item).filter(
+                      ([itemKey, itemValue]) => !(optionalItem.has(itemKey) && isBlank(itemValue)),
+                    ),
+                  ),
+                )
+              : value,
+          ]),
       );
       return { ...block, props } as Block;
     }),
@@ -207,7 +436,12 @@ export function validatePage(page: PageContent): ValidationResult {
     const block = typeof index === 'number' ? page.blocks[index] : undefined;
     const where =
       block && typeof index === 'number' ? `${BLOCK_LABELS[block.type]} ${index + 1}` : 'Página';
-    const field = rest.filter((part) => part !== 'props').join(' › ');
+    const field = rest
+      .filter((part) => part !== 'props' && part !== 'items')
+      .map((part) =>
+        typeof part === 'number' ? `item ${part + 1}` : (PROP_LABELS[part] ?? String(part)),
+      )
+      .join(' › ');
     return `${where}${field ? ` (${field})` : ''}: ${issue.message}`;
   });
   return { valid: false, errors };

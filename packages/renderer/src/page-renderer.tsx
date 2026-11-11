@@ -49,7 +49,7 @@ export function BlockPreview({
     >
       <style>{RENDERER_STYLES}</style>
       <div className="sbp-wrap" style={{ padding: 20 }}>
-        {renderBlock(block, { fallbackImage })}
+        {renderBlock(block, { fallbackImage, thumbnail: true })}
       </div>
     </div>
   );
