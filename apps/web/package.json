@@ -6,8 +6,8 @@
     "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start",
-    "typecheck": "next typegen && tsc --noEmit",
-    "lint": "tsc --noEmit",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+    "lint": "tsc --noEmit -p tsconfig.typecheck.json",
     "test": "echo \"sem testes ainda em web\""
   },
   "dependencies": {
