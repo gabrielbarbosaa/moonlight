@@ -3,6 +3,7 @@ import { AuthModule } from '../auth/auth.module';
 import { LocalStorageService } from './local-storage.service';
 import { MediaController } from './media.controller';
 import { MediaService } from './media.service';
+import { NsfwService } from './nsfw.service';
 import { StoragePort } from './storage.port';
 
 @Module({
@@ -11,6 +12,7 @@ import { StoragePort } from './storage.port';
   providers: [
     LocalStorageService,
     { provide: StoragePort, useExisting: LocalStorageService },
+    NsfwService,
     MediaService,
   ],
 })

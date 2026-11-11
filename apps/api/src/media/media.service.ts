@@ -12,6 +12,7 @@ import { EntitlementsService } from '../billing/entitlements.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { RateLimitService } from '../redis/rate-limit.service';
 import { processImage } from './image-processor';
+import { NsfwService } from './nsfw.service';
 import { StoragePort } from './storage.port';
 
 const UPLOADS_PER_HOUR = 40;
@@ -32,6 +33,7 @@ export class MediaService {
     private readonly storage: StoragePort,
     private readonly entitlements: EntitlementsService,
     private readonly rateLimit: RateLimitService,
+    private readonly nsfw: NsfwService,
   ) {}
 
   async upload(ownerId: string, file: Express.Multer.File | undefined): Promise<MediaAssetDto> {
@@ -44,6 +46,7 @@ export class MediaService {
     await this.entitlements.assertCanAddImage(ownerId, current);
 
     const processed = await processImage(file.buffer);
+    await this.nsfw.assertSafe(processed.data, ownerId);
     const id = randomUUID();
     const key = `${id}.webp`;
 
