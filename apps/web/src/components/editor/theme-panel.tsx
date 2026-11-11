@@ -17,6 +17,7 @@ import {
 } from '@moonlight/schemas';
 import { mixHex } from '@/lib/page-editor';
 import { ColorField, OptionRow, TextField } from './fields';
+import { ImageField } from './image-field';
 
 type Labels = Record<string, string>;
 
@@ -121,10 +122,9 @@ export function ThemePanel({
           />
         )}
         {theme.backgroundType === 'image' && (
-          <TextField
-            label="URL da imagem de fundo"
+          <ImageField
+            label="Imagem de fundo"
             value={theme.backgroundImageUrl}
-            placeholder="https://"
             hint="A imagem recebe uma camada da cor de fundo para manter o texto legível."
             onChange={(backgroundImageUrl) => set({ backgroundImageUrl })}
           />

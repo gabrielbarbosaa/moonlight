@@ -80,7 +80,7 @@ Atualizar a API:
 cd moonlight && git pull && cd deploy && docker compose up -d --build
 ```
 
-Backup do Postgres (guarda 14 dias em `deploy/backups`), agendado todo dia às 03:00:
+Backup do Postgres e das imagens enviadas (volume `media`; guarda 14 dias em `deploy/backups`), agendado todo dia às 03:00:
 
 ```bash
 chmod +x backup.sh
@@ -93,7 +93,13 @@ Restaurar um backup:
 gunzip -c backups/ARQUIVO.sql.gz | docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" "$POSTGRES_DB"'
 ```
 
-Copie também os backups para fora da VPS.
+Restaurar as imagens:
+
+```bash
+docker compose exec -T api tar -C /data/media -xzf - < backups/ARQUIVO-media.tar.gz
+```
+
+Copie também os backups para fora da VPS. As imagens ficam no volume `media` da API e são entregues por `https://api.seudominio.com/media/files/...`; garanta que `API_URL` no `deploy/.env` seja esse endereço público.
 
 ## Problemas comuns
 

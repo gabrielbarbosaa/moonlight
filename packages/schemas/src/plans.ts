@@ -6,6 +6,7 @@ export type PlanId = z.infer<typeof planIdSchema>;
 
 export type Entitlements = {
   maxBlocks: number;
+  maxImages: number;
   booking: boolean;
   maxBookingServices: number;
   analyticsDays: number;
@@ -23,13 +24,25 @@ export const PLANS: Record<PlanId, PlanDefinition> = {
     id: 'FREE',
     name: 'Grátis',
     priceCents: 0,
-    entitlements: { maxBlocks: 8, booking: false, maxBookingServices: 0, analyticsDays: 7 },
+    entitlements: {
+      maxBlocks: 8,
+      maxImages: 10,
+      booking: false,
+      maxBookingServices: 0,
+      analyticsDays: 7,
+    },
   },
   PRO: {
     id: 'PRO',
     name: 'Pro',
     priceCents: 2900,
-    entitlements: { maxBlocks: 50, booking: true, maxBookingServices: 10, analyticsDays: 90 },
+    entitlements: {
+      maxBlocks: 50,
+      maxImages: 100,
+      booking: true,
+      maxBookingServices: 10,
+      analyticsDays: 90,
+    },
   },
 };
 

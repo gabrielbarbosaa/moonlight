@@ -30,8 +30,26 @@ model User {
   authCodes     AuthCode[]
   auditLogs     AuditLog[]
   subscription  Subscription?
+  mediaAssets   MediaAsset[]
 
   @@map("users")
+}
+
+/// Imagem enviada pelo usuário. O arquivo fica no armazenamento; aqui ficam os metadados e a cota.
+model MediaAsset {
+  id          String   @id @default(uuid()) @db.Uuid
+  ownerId     String   @db.Uuid
+  key         String   @unique
+  contentType String
+  sizeBytes   Int
+  width       Int
+  height      Int
+  createdAt   DateTime @default(now())
+
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([ownerId, createdAt])
+  @@map("media_assets")
 }
 
 enum PlanId {

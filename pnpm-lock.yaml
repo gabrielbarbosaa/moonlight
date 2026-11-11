@@ -80,6 +80,9 @@ importers:
       rxjs:
         specifier: ^7.8.1
         version: 7.8.2
+      sharp:
+        specifier: ^0.35.5
+        version: 0.35.5(@types/node@22.20.5)
       zod:
         specifier: ^3.24.1
         version: 3.25.76
@@ -96,6 +99,9 @@ importers:
       '@types/express':
         specifier: ^5.0.0
         version: 5.0.6
+      '@types/multer':
+        specifier: ^1
+        version: 1.4.13
       '@types/node':
         specifier: ^22.10.2
         version: 22.20.5
@@ -758,6 +764,9 @@ packages:
 
   '@types/luxon@3.4.2':
     resolution: {integrity: sha512-TifLZlFudklWlMBfhubvgqTXRzLDI5pCbGa4P8a3wPyUQSW+1xQ5eDsreP9DWHX3tjq1ke96uYG/nwundroWcA==}
+
+  '@types/multer@1.4.13':
+    resolution: {integrity: sha512-bhhdtPw7JqCiEfC9Jimx5LqX9BDIPJEh2q/fQ4bqbBPtyEZYr3cvF22NwG0DmPZNYA0CAf2CnqDB4KIGGpJcaw==}
 
   '@types/node@22.20.5':
     resolution: {integrity: sha512-U2+DNr+wSjpsTS/wZGYHq7GcwfuSmKiKvoPvK22zwTlRhU91yOniN4qRR5KhIjvif7ysw/dz/hKmfDH0Ris4aA==}
@@ -2883,8 +2892,7 @@ snapshots:
     dependencies:
       react-hook-form: 7.92.0(@types/react@19.3.0)(react@19.3.1)
 
-  '@img/colour@1.1.0':
-    optional: true
+  '@img/colour@1.1.0': {}
 
   '@img/sharp-darwin-arm64@0.35.5':
     optionalDependencies:
@@ -3320,6 +3328,10 @@ snapshots:
   '@types/json-schema@7.0.15': {}
 
   '@types/luxon@3.4.2': {}
+
+  '@types/multer@1.4.13':
+    dependencies:
+      '@types/express': 5.0.6
 
   '@types/node@22.20.5':
     dependencies:
@@ -3877,8 +3889,7 @@ snapshots:
 
   destroy@1.2.0: {}
 
-  detect-libc@2.1.2:
-    optional: true
+  detect-libc@2.1.2: {}
 
   dot-prop@5.3.0:
     dependencies:
@@ -4904,7 +4915,6 @@ snapshots:
       '@img/sharp-win32-ia32': 0.35.5
       '@img/sharp-win32-x64': 0.35.5
       '@types/node': 22.20.5
-    optional: true
 
   shebang-command@2.0.0:
     dependencies:

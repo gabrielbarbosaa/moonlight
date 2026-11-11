@@ -8,6 +8,8 @@ import type {
   BillingState,
   BookingSettings,
   BookingSettingsInput,
+  MediaAssetDto,
+  MediaLibrary,
   OwnerBooking,
   Paginated,
   CreateTenantInput,
@@ -90,6 +92,16 @@ export const backofficeApi = {
   audit: () => api.get<BackofficeAuditEntry[]>('/backoffice/audit').then((res) => res.data),
 };
 
+export const mediaApi = {
+  list: () => api.get<MediaLibrary>('/media').then((res) => res.data),
+  upload: (file: File) => {
+    const form = new FormData();
+    form.append('file', file);
+    return api.post<MediaAssetDto>('/media', form).then((res) => res.data);
+  },
+  remove: (id: string) => api.delete(`/media/${id}`).then(() => undefined),
+};
+
 export const analyticsApi = {
   summary: (days: number) =>
     api.get<AnalyticsSummary>('/analytics/me', { params: { days } }).then((res) => res.data),
@@ -117,8 +129,12 @@ export function getErrorMessage(error: unknown): string {
     if (error.response.status === 403 && data?.code === 'PLAN_LIMIT' && data.message) {
       return `${data.message} Veja os planos em /admin/billing.`;
     }
+    if (error.response.status === 413) return 'A imagem passa de 5 MB.';
+    if (error.response.status === 409 && data?.message) return data.message;
     if (error.response.status === 409)
       return 'Este endereço já está em uso ou o limite foi atingido.';
+    if (error.response.status === 400 && data?.message && /imagem/i.test(data.message))
+      return data.message;
     if (error.response.status === 401) return 'Credenciais ou código inválidos.';
     if (error.response.status === 400) return 'Confira os dados informados.';
     if (error.response.status === 429) return 'Muitas tentativas. Tente novamente em instantes.';

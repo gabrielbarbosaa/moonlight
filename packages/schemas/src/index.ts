@@ -7,3 +7,4 @@ export * from './analytics';
 export * from './backoffice';
 export * from './booking';
 export * from './plans';
+export * from './media';

@@ -24,6 +24,7 @@ RUN node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.
 FROM base AS runtime
 ENV NODE_ENV=production
 COPY --from=build /repo /repo
+RUN mkdir -p /data/media && chown -R node:node /data
 WORKDIR /repo/apps/api
 USER node
 EXPOSE 4000

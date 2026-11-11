@@ -18,7 +18,7 @@ pnpm 9 workspaces + Turborepo, Node >= 20 (`.nvmrc`). Run from the repo root:
 ```bash
 pnpm install
 cp .env.example .env
-pnpm infra:up                          # Postgres 17, Redis, Mailpit (:8026), MinIO (:9001) via docker compose
+pnpm infra:up                          # Postgres 17, Redis, Mailpit (:8026) via docker compose
 pnpm --filter @moonlight/schemas build   # required once before api/web (they consume its dist/)
 pnpm db:migrate                        # prisma migrate dev (api)
 pnpm dev                               # web :3000, api :4000
@@ -63,6 +63,10 @@ Per tenant: `bookingEnabled`, `timezone`, `BookingService` (name + duration), `A
 
 Plans are code, not data: `packages/schemas/src/plans.ts` (`PLANS`, `entitlementsFor`, `resolvePlan`) is shared by API and web. A user without a `Subscription` row, or with a `CANCELED` one, is on FREE. Limits are enforced in the API through `EntitlementsService` (block count in `PagesService` on save and publish, booking in `BookingService` plus public visibility, analytics range clamped in `AnalyticsService`); violations return 403 `{ code: 'PLAN_LIMIT', message }`, which `getErrorMessage` in the web surfaces. Downgrades never delete data, they only block new changes and hide the public booking page. Billing sits behind `BillingPort`; the only adapter is `SandboxBillingService` (fake hosted checkout at `/billing/sandbox/checkout`, sessions in Redis). The plan only changes from signed webhook events (`POST /billing/webhook`, HMAC with `BILLING_WEBHOOK_SECRET`, needs `rawBody: true` in `main.ts`), deduplicated by the unique `BillingEvent.providerEventId`. `BillingRenewalService` simulates period end (renew or cancel) on boot and via cron at 00:10 UTC; a real provider adapter would replace it with the provider's own events.
 
+### Media (image uploads)
+
+`apps/api/src/media`: `POST /media` (multer memory, 5 MB, field `file`) re-encodes every image with sharp to WebP (auto-rotate, max 2000px, metadata stripped, `limitInputPixels` 40M; only JPEG/PNG/WebP/GIF input, SVG refused) and stores it as `{uuid}.webp` through `StoragePort` (only adapter: `LocalStorageService`, dir from `MEDIA_DIR`, public URL built from `API_URL`). `GET /media/files/:name` is public with an immutable cache header and validates the name against `MEDIA_KEY_PATTERN`. Quota is `maxImages` per plan (403 `PLAN_LIMIT`), uploads are rate limited to 40/h per user, and deleting an image still referenced in a page draft or published JSON returns 409. Pages keep plain image URLs, so external URLs still work. In production the files live in the `media` volume of `deploy/docker-compose.yml`, included by `deploy/backup.sh`. Web side: `components/editor/image-field.tsx` (`ImageField` + library modal), used by the header avatar, hero image and theme background. Animated GIFs become static; a S3/R2 adapter can replace the local one via `StoragePort`.
+
 ### Rate limiting
 
 `RateLimitService` (Redis counters, `rl:*` keys) backs `@RateLimit({ name, limit, windowSeconds, perEmail? })` + `RateLimitGuard` (`apps/api/src/redis/rate-limit.guard.ts`), applied to `/auth/register` (5/h per IP), `/auth/login` (10 per 15 min per IP, 5 per 15 min per email) and `/auth/verify` (15 per 15 min per IP); it answers 429 with `Retry-After`. The guard runs before body validation, so the email it reads is normalized by the guard itself. IPs come from `req.ip`; set `TRUST_PROXY` (number of proxy hops) only when the API really sits behind a reverse proxy, otherwise `X-Forwarded-For` is ignored on purpose so it cannot be forged to dodge the limits. Other limits (tracking, reports, booking) call `RateLimitService.allow` directly.
@@ -90,4 +94,4 @@ Request bodies are validated by a global `ZodValidationPipe` from `nestjs-zod`. 
 - Session cookie is host-only on the main domain so tenant pages never receive the admin session.
 - Prisma is the ORM, with raw SQL in migrations for features it can't model (e.g. `tstzrange` exclusion constraints for the future scheduling module).
 - Email, storage, and billing sit behind interfaces so adapters can be swapped without touching the domain.
-- Dev services: Mailpit catches 2FA emails; MinIO is the S3-compatible store. Config in `.env.example`.
+- Dev services: Mailpit catches 2FA emails. Uploaded images live on local disk (`MEDIA_DIR`) behind `StoragePort`. Config in `.env.example`.

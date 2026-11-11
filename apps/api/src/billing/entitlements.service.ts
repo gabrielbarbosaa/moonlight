@@ -34,6 +34,15 @@ export class EntitlementsService {
     }
   }
 
+  async assertCanAddImage(userId: string, currentCount: number) {
+    const { plan, entitlements } = await this.forUser(userId);
+    if (currentCount >= entitlements.maxImages) {
+      throw planLimitError(
+        `O plano ${PLANS[plan].name} permite até ${entitlements.maxImages} imagens.`,
+      );
+    }
+  }
+
   async assertBooking(userId: string) {
     const { plan, entitlements } = await this.forUser(userId);
     if (!entitlements.booking) {

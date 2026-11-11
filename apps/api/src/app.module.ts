@@ -9,6 +9,7 @@ import { BillingModule } from './billing/billing.module';
 import { BookingModule } from './booking/booking.module';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
+import { MediaModule } from './media/media.module';
 import { PagesModule } from './pages/pages.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { RedisModule } from './redis/redis.module';
@@ -30,6 +31,7 @@ import { TenantsModule } from './tenants/tenants.module';
     BackofficeModule,
     BookingModule,
     BillingModule,
+    MediaModule,
   ],
   providers: [{ provide: APP_PIPE, useClass: ZodValidationPipe }],
   controllers: [HealthController],

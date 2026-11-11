@@ -4,6 +4,7 @@ import type { Block, Theme } from '@moonlight/schemas';
 import { Icon } from '@/components/icons';
 import { moveItem, newId } from '@/lib/page-editor';
 import { TextField } from './fields';
+import { ImageField } from './image-field';
 import { VariantPicker } from './variant-picker';
 
 type BlockOf<T extends Block['type']> = Extract<Block, { type: T }>;
@@ -25,11 +26,9 @@ function HeaderForm({ block, onChange }: FormProps<'header'>) {
         onChange={(title) => onChange({ ...block, props: { ...block.props, title } })}
       />
       {needsAvatar && (
-        <TextField
-          label="URL da foto"
+        <ImageField
+          label="Foto"
           value={block.props.avatarUrl}
-          placeholder="https://"
-          hint="Use o endereço de uma imagem já publicada na internet."
           onChange={(avatarUrl) => onChange({ ...block, props: { ...block.props, avatarUrl } })}
         />
       )}
@@ -60,11 +59,9 @@ function HeroForm({ block, onChange }: FormProps<'hero'>) {
         onChange={(subheading) => set({ subheading })}
       />
       {needsImage && (
-        <TextField
-          label="URL da imagem"
+        <ImageField
+          label="Imagem"
           value={block.props.imageUrl}
-          placeholder="https://"
-          hint="Use o endereço de uma imagem já publicada na internet."
           onChange={(imageUrl) => set({ imageUrl })}
         />
       )}

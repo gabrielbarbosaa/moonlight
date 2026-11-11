@@ -19,6 +19,7 @@ function formatDate(value: string) {
 function features(entitlements: Entitlements) {
   return [
     { text: `Até ${entitlements.maxBlocks} blocos por página`, on: true },
+    { text: `Até ${entitlements.maxImages} imagens enviadas`, on: true },
     { text: 'Todos os temas e estilos', on: true },
     {
       text: entitlements.booking

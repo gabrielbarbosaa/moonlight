@@ -14,7 +14,7 @@ Projeto de estudo e portfólio, pensado para rodar **100% local e sem custo**.
 | Banco                     | PostgreSQL 17                                                  |
 | Cache, filas e contadores | Redis                                                          |
 | E-mail (dev)              | Mailpit                                                        |
-| Arquivos (dev)            | MinIO (compatível com S3)                                      |
+| Imagens                   | Upload com sharp (WebP), disco local atrás de uma interface    |
 | Monorepo                  | pnpm workspaces + Turborepo                                    |
 
 ## Estrutura
@@ -35,7 +35,7 @@ Requisitos: Node 20+, pnpm 9+ e Docker.
 ```bash
 cp .env.example .env
 pnpm install
-pnpm infra:up                 # Postgres, Redis e Mailpit (MinIO fica no profile "storage", desligado por padrão)
+pnpm infra:up                 # Postgres, Redis e Mailpit
 pnpm db:migrate               # aplica as migrations
 pnpm dev                      # compila os pacotes e sobe web em :3000 e api em :4000
 ```
@@ -47,7 +47,7 @@ Endereços úteis:
 - Página de um tenant: http://maria.localhost:3000 (subdomínios `*.localhost` funcionam direto no navegador) ou http://localhost:3000/s/maria (fallback por caminho)
 - API (health): http://localhost:4000/health
 - Mailpit (e-mails do 2FA): http://localhost:8026
-- Console do MinIO: http://localhost:9001
+- Imagens enviadas: gravadas em `apps/api/storage/media` e servidas em http://localhost:4000/media/files/...
 
 ## Deploy
 
