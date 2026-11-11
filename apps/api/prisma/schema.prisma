@@ -59,9 +59,25 @@ model Tenant {
 
   owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   page      Page?
+  analytics AnalyticsDaily[]
 
   @@index([ownerId])
   @@map("tenants")
+}
+
+/// Agregado diário (UTC) de visitas e cliques, consolidado a partir do Redis.
+model AnalyticsDaily {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  date           DateTime @db.Date
+  views          Int      @default(0)
+  uniqueVisitors Int      @default(0)
+  clicks         Json     @default("{}")
+
+  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, date])
+  @@map("analytics_daily")
 }
 
 /// A página do tenant: rascunho e versão publicada em JSONB.

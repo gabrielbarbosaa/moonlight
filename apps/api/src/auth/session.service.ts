@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { createHash, randomBytes } from 'node:crypto';
 import Redis from 'ioredis';
-import { REDIS } from '../redis/redis.module';
+import { REDIS } from '../redis/redis.constants';
 
 export const SESSION_COOKIE = 'sb_session';
 export const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7;

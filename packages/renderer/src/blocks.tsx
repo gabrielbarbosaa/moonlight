@@ -37,13 +37,24 @@ function HeaderBlock({ block }: { block: BlockOf<'header'> }) {
   );
 }
 
-function CtaButton({ label, url, theme }: { label?: string; url?: string; theme: Theme }) {
+function CtaButton({
+  label,
+  url,
+  theme,
+  trackId,
+}: {
+  label?: string;
+  url?: string;
+  theme: Theme;
+  trackId: string;
+}) {
   const href = safeHref(url);
   if (!label || !href) return null;
   return (
     <a
       href={href}
       rel="noopener noreferrer"
+      data-track-link={trackId}
       style={{
         display: 'inline-block',
         marginTop: 16,
@@ -68,7 +79,7 @@ function HeroBlock({ block, theme }: { block: BlockOf<'hero'>; theme: Theme }) {
     <div>
       <h2 style={{ margin: 0, fontSize: 40, lineHeight: 1.1 }}>{heading}</h2>
       {subheading && <p style={{ fontSize: 18, opacity: 0.8 }}>{subheading}</p>}
-      <CtaButton label={ctaLabel} url={ctaUrl} theme={theme} />
+      <CtaButton label={ctaLabel} url={ctaUrl} theme={theme} trackId={`cta-${block.id}`} />
     </div>
   );
 
@@ -136,7 +147,13 @@ function LinksBlock({ block, theme }: { block: BlockOf<'links'>; theme: Theme })
         const href = safeHref(item.url);
         if (!href) return null;
         return (
-          <a key={item.id} href={href} rel="noopener noreferrer" style={itemStyle}>
+          <a
+            key={item.id}
+            href={href}
+            rel="noopener noreferrer"
+            data-track-link={item.id}
+            style={itemStyle}
+          >
             {item.label}
           </a>
         );

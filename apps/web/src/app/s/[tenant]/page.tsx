@@ -1,6 +1,7 @@
 import { PageRenderer } from '@sitebuilder/renderer';
 import type { PageContent } from '@sitebuilder/schemas';
 import { notFound } from 'next/navigation';
+import { TrackView } from '@/components/track-view';
 
 const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 
@@ -30,5 +31,10 @@ export default async function TenantPage({ params }: { params: Promise<{ tenant:
     );
   }
 
-  return <PageRenderer content={tenant.page} />;
+  return (
+    <>
+      <PageRenderer content={tenant.page} />
+      <TrackView slug={tenant.slug} />
+    </>
+  );
 }

@@ -1,5 +1,6 @@
 import axios, { isAxiosError } from 'axios';
 import type {
+  AnalyticsSummary,
   CreateTenantInput,
   PageContent,
   LoginInput,
@@ -45,6 +46,11 @@ export const tenantsApi = {
     api
       .get<{ slug: string; available: boolean }>('/tenants/slug-available', { params: { slug } })
       .then((res) => res.data),
+};
+
+export const analyticsApi = {
+  summary: (days: number) =>
+    api.get<AnalyticsSummary>('/analytics/me', { params: { days } }).then((res) => res.data),
 };
 
 export type PageState = {

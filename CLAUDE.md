@@ -28,7 +28,7 @@ pnpm --filter api typecheck            # single task in a single package
 pnpm format                            # prettier --write .
 ```
 
-- `lint` in every package is just `tsc --noEmit` (no ESLint).
+- `lint` in every package is just `tsc --noEmit` (no ESLint). In `apps/web` both `lint` and `typecheck` use `tsconfig.typecheck.json`, which avoids `.next/` so they cannot race with `next build`.
 - Turbo tasks `build`, `lint`, `typecheck`, and `test` all depend on `^build`, so `@sitebuilder/schemas` is built first automatically when running through Turbo; when running a package script directly, build schemas yourself.
 - api `build`/`dev`/`typecheck` run `prisma generate` first.
 
@@ -46,6 +46,10 @@ pnpm format                            # prettier --write .
 - `packages/schemas` (`@sitebuilder/schemas`): shared Zod schemas (auth, tenant, blocks, `RESERVED_SLUGS`), compiled to `dist/` and imported by both apps. Pages are stored as JSONB with a `schemaVersion` and validated by the same Zod schema on front and back, so change block shapes here, not in the apps.
 
 - `packages/renderer` (`@sitebuilder/renderer`): React `PageRenderer` that turns a `PageContent` into the public page. It re-validates with `pageSchema` and passes every URL through `safeHref`. The editor preview should reuse it. Rebuild it (and schemas) after changes, since apps consume `dist/`.
+
+### Analytics
+
+Public tenant pages mount `TrackView` (`apps/web/src/components/track-view.tsx`), which POSTs views and clicks to `/analytics/track` (links carry `data-track-link` from the renderer). The API counts them in Redis (`an:d:*` hashes, `an:u:*` HyperLogLog of daily-salted visitor hashes). `AnalyticsRollupService` consolidates past UTC days into the `analytics_daily` table on boot and via cron at 00:05 UTC. `/analytics/me` merges Postgres rows with live Redis data. CORS in `main.ts` allows `*.ROOT_DOMAIN` origins only for `/analytics/track`, without credentials.
 
 ### API validation and docs
 

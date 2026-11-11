@@ -11,9 +11,25 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
-  app.enableCors({
-    origin: process.env.WEB_URL ?? 'http://localhost:3000',
-    credentials: true,
+  const webUrl = process.env.WEB_URL ?? 'http://localhost:3000';
+  const rootDomain = (process.env.ROOT_DOMAIN ?? 'localhost:3000').toLowerCase();
+
+  const isTenantOrigin = (origin: string | undefined) => {
+    if (!origin) return false;
+    try {
+      return new URL(origin).host.toLowerCase().endsWith(`.${rootDomain}`);
+    } catch {
+      return false;
+    }
+  };
+
+  app.enableCors((req: { originalUrl: string; headers: { origin?: string } }, callback) => {
+    const path = req.originalUrl.split('?')[0];
+    if (path === '/analytics/track' && isTenantOrigin(req.headers.origin)) {
+      callback(null, { origin: true, credentials: false, methods: ['POST', 'OPTIONS'] });
+      return;
+    }
+    callback(null, { origin: webUrl, credentials: true });
   });
 
   if (process.env.NODE_ENV !== 'production') {

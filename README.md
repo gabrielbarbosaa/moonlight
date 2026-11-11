@@ -35,10 +35,9 @@ Requisitos: Node 20+, pnpm 9+ e Docker.
 ```bash
 cp .env.example .env
 pnpm install
-pnpm infra:up                 # Postgres, Redis, Mailpit e MinIO
-pnpm --filter @sitebuilder/schemas build
-pnpm db:migrate               # cria as tabelas (primeira vez: informe um nome, ex.: init)
-pnpm dev                      # web em :3000 e api em :4000
+pnpm infra:up                 # Postgres, Redis e Mailpit (MinIO fica no profile "storage", desligado por padrão)
+pnpm db:migrate               # aplica as migrations
+pnpm dev                      # compila os pacotes e sobe web em :3000 e api em :4000
 ```
 
 Endereços úteis:

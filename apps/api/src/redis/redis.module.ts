@@ -1,8 +1,8 @@
 import { Global, Inject, Module, OnApplicationShutdown } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
-
-export const REDIS = Symbol('REDIS');
+import { RateLimitService } from './rate-limit.service';
+import { REDIS } from './redis.constants';
 
 @Global()
 @Module({
@@ -13,8 +13,9 @@ export const REDIS = Symbol('REDIS');
       useFactory: (config: ConfigService) =>
         new Redis(config.get<string>('REDIS_URL', 'redis://localhost:6380')),
     },
+    RateLimitService,
   ],
-  exports: [REDIS],
+  exports: [REDIS, RateLimitService],
 })
 export class RedisModule implements OnApplicationShutdown {
   constructor(@Inject(REDIS) private readonly redis: Redis) {}
