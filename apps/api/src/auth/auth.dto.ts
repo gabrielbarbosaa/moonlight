@@ -1,4 +1,4 @@
-import { loginSchema, registerSchema, verifyCodeSchema } from '@sitebuilder/schemas';
+import { loginSchema, registerSchema, verifyCodeSchema } from '@moonlight/schemas';
 import { createZodDto } from 'nestjs-zod';
 
 export class RegisterDto extends createZodDto(registerSchema) {}

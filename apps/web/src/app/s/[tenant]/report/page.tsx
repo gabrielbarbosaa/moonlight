@@ -1,6 +1,6 @@
 'use client';
 
-import { REPORT_REASONS, REPORT_REASON_LABELS } from '@sitebuilder/schemas';
+import { REPORT_REASONS, REPORT_REASON_LABELS } from '@moonlight/schemas';
 import { useParams } from 'next/navigation';
 import { useState, type FormEvent } from 'react';
 import { Icon } from '@/components/icons';

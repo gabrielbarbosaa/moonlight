@@ -1,7 +1,7 @@
 'use client';
 
-import { PageRenderer } from '@sitebuilder/renderer';
-import type { PageContent } from '@sitebuilder/schemas';
+import { PageRenderer } from '@moonlight/renderer';
+import type { PageContent } from '@moonlight/schemas';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ROOT_DOMAIN } from '@/components/create-tenant-form';

@@ -4,7 +4,7 @@ import { Providers } from '@/components/providers';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: { default: 'SiteBuilder', template: '%s · SiteBuilder' },
+  title: { default: 'Moonlight', template: '%s · Moonlight' },
   description: 'Crie sua página pessoal em minutos, com temas, agenda e estatísticas.',
 };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import type { BookingConfirmation, BookingSlot, PublicBookingInfo } from '@sitebuilder/schemas';
+import type { BookingConfirmation, BookingSlot, PublicBookingInfo } from '@moonlight/schemas';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Icon } from '@/components/icons';

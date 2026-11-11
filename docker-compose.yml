@@ -3,15 +3,15 @@ services:
     image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-sitebuilder}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sitebuilder}
-      POSTGRES_DB: ${POSTGRES_DB:-sitebuilder}
+      POSTGRES_USER: ${POSTGRES_USER:-moonlight}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-moonlight}
+      POSTGRES_DB: ${POSTGRES_DB:-moonlight}
     ports:
       - '5433:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-sitebuilder}']
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-moonlight}']
       interval: 5s
       timeout: 3s
       retries: 10

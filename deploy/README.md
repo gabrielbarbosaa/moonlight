@@ -30,8 +30,8 @@ Requisitos: Linux com 2 GB de RAM ou mais (o build da imagem usa memória), Dock
 ```bash
 curl -fsSL https://get.docker.com | sh
 sudo ufw allow 22 && sudo ufw allow 80 && sudo ufw allow 443 && sudo ufw enable
-git clone <URL-DO-SEU-REPOSITORIO> sitebuilder
-cd sitebuilder/deploy
+git clone <URL-DO-SEU-REPOSITORIO> moonlight
+cd moonlight/deploy
 cp .env.production.example .env
 chmod 600 .env
 ```
@@ -77,7 +77,7 @@ Em Settings > Domains, adicione `seudominio.com` e `*.seudominio.com` e siga as 
 Atualizar a API:
 
 ```bash
-cd sitebuilder && git pull && cd deploy && docker compose up -d --build
+cd moonlight && git pull && cd deploy && docker compose up -d --build
 ```
 
 Backup do Postgres (guarda 14 dias em `deploy/backups`), agendado todo dia às 03:00:

@@ -1,4 +1,4 @@
-import type { PlanId } from '@sitebuilder/schemas';
+import type { PlanId } from '@moonlight/schemas';
 
 export type BillingEventType =
   'checkout.completed' | 'payment.failed' | 'subscription.renewed' | 'subscription.canceled';

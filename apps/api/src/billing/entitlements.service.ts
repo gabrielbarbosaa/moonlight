@@ -5,7 +5,7 @@ import {
   resolvePlan,
   type Entitlements,
   type PlanId,
-} from '@sitebuilder/schemas';
+} from '@moonlight/schemas';
 import { PrismaService } from '../prisma/prisma.service';
 
 export function planLimitError(message: string) {

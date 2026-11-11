@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { PLANS, type SandboxCompleteResult, type SandboxSessionInfo } from '@sitebuilder/schemas';
+import { PLANS, type SandboxCompleteResult, type SandboxSessionInfo } from '@moonlight/schemas';
 import type { Request } from 'express';
 import { AuthenticatedRequest, SessionGuard } from '../auth/session.guard';
 import { SESSION_COOKIE } from '../auth/session.service';

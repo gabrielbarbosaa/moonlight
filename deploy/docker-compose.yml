@@ -1,4 +1,4 @@
-name: sitebuilder
+name: moonlight
 
 services:
   postgres:
@@ -34,7 +34,7 @@ services:
     build:
       context: ..
       dockerfile: apps/api/Dockerfile
-    image: sitebuilder-api:latest
+    image: moonlight-api:latest
     restart: unless-stopped
     depends_on:
       postgres:

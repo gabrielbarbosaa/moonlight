@@ -1,4 +1,4 @@
-import { PageRenderer } from '@sitebuilder/renderer';
+import { PageRenderer } from '@moonlight/renderer';
 import {
   DEFAULT_THEME,
   PLANS,
@@ -7,7 +7,7 @@ import {
   type Entitlements,
   type PageContent,
   type PlanDefinition,
-} from '@sitebuilder/schemas';
+} from '@moonlight/schemas';
 import Link from 'next/link';
 import { Brand } from '@/components/brand';
 import { Icon, type IconName } from '@/components/icons';
@@ -324,7 +324,7 @@ export default function LandingPage() {
       <footer className="lp-footer">
         <div className="lp-container lp-footer-inner">
           <Brand />
-          <span>© {new Date().getFullYear()} SiteBuilder</span>
+          <span>© {new Date().getFullYear()} Moonlight</span>
         </div>
       </footer>
     </div>

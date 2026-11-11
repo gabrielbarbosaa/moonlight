@@ -5,7 +5,7 @@ import {
   type AnalyticsDay,
   type AnalyticsSummary,
   type TrackEventInput,
-} from '@sitebuilder/schemas';
+} from '@moonlight/schemas';
 import { createHmac } from 'node:crypto';
 import Redis from 'ioredis';
 import { EntitlementsService } from '../billing/entitlements.service';

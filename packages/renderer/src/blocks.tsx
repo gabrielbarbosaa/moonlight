@@ -1,5 +1,5 @@
 import type { CSSProperties, ReactElement } from 'react';
-import type { Block } from '@sitebuilder/schemas';
+import type { Block } from '@moonlight/schemas';
 import { safeHref } from './utils';
 
 type BlockOf<T extends Block['type']> = Extract<Block, { type: T }>;

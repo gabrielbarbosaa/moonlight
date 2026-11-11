@@ -1,6 +1,6 @@
 'use client';
 
-import { FONT_STACKS, PageRenderer } from '@sitebuilder/renderer';
+import { FONT_STACKS, PageRenderer } from '@moonlight/renderer';
 import {
   BACKGROUND_TYPES,
   BUTTON_SHAPES,
@@ -14,7 +14,7 @@ import {
   WIDTHS,
   samplePage,
   type Theme,
-} from '@sitebuilder/schemas';
+} from '@moonlight/schemas';
 import { mixHex } from '@/lib/page-editor';
 import { ColorField, OptionRow, TextField } from './fields';
 

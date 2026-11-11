@@ -18,7 +18,7 @@ export class SmtpMailService extends MailPort {
       secure: config.get<string>('SMTP_SECURE') === 'true',
       auth: user && pass ? { user, pass } : undefined,
     });
-    this.from = config.get<string>('MAIL_FROM', 'SiteBuilder <no-reply@sitebuilder.local>');
+    this.from = config.get<string>('MAIL_FROM', 'Moonlight <no-reply@moonlight.local>');
   }
 
   async sendAuthCode(to: string, code: string, expiresInMinutes: number) {

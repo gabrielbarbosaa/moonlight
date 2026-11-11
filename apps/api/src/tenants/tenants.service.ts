@@ -14,7 +14,7 @@ import {
   starterPage,
   type CreateReportInput,
   type CreateTenantInput,
-} from '@sitebuilder/schemas';
+} from '@moonlight/schemas';
 import { PrismaService } from '../prisma/prisma.service';
 import { RateLimitService } from '../redis/rate-limit.service';
 

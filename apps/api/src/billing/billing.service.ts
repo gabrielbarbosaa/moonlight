@@ -7,7 +7,7 @@ import {
   resolvePlan,
   type BillingState,
   type PlanId,
-} from '@sitebuilder/schemas';
+} from '@moonlight/schemas';
 import { PrismaService } from '../prisma/prisma.service';
 import { BillingPort, type BillingProviderEvent } from './billing.port';
 

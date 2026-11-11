@@ -8,7 +8,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { entitlementsFor, resolvePlan } from '@sitebuilder/schemas';
+import { entitlementsFor, resolvePlan } from '@moonlight/schemas';
 import type {
   BookingConfirmation,
   BookingSettings,
@@ -19,7 +19,7 @@ import type {
   OwnerBooking,
   PublicBookingInfo,
   SlotsQuery,
-} from '@sitebuilder/schemas';
+} from '@moonlight/schemas';
 import { EntitlementsService } from '../billing/entitlements.service';
 import { MailPort, type BookingMailDetails } from '../mail/mail.port';
 import { PrismaService } from '../prisma/prisma.service';

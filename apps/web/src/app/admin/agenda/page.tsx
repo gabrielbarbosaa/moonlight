@@ -4,7 +4,7 @@ import {
   WEEKDAY_LABELS,
   bookingSettingsSchema,
   type BookingSettingsInput,
-} from '@sitebuilder/schemas';
+} from '@moonlight/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import Link from 'next/link';

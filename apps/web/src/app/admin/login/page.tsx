@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { loginSchema, registerSchema, verifyCodeSchema } from '@sitebuilder/schemas';
+import { loginSchema, registerSchema, verifyCodeSchema } from '@moonlight/schemas';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';

@@ -1,6 +1,6 @@
 'use client';
 
-import type { Block, BlockType, PageContent } from '@sitebuilder/schemas';
+import type { Block, BlockType, PageContent } from '@moonlight/schemas';
 import Link from 'next/link';
 import { useState } from 'react';
 import { Icon } from '@/components/icons';

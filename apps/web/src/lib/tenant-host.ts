@@ -1,4 +1,4 @@
-import { RESERVED_SLUGS } from '@sitebuilder/schemas';
+import { RESERVED_SLUGS } from '@moonlight/schemas';
 
 /**
  * Extrai o slug do tenant a partir do header Host.

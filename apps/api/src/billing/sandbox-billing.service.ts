@@ -1,7 +1,7 @@
 import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createHmac, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
-import type { PlanId } from '@sitebuilder/schemas';
+import type { PlanId } from '@moonlight/schemas';
 import Redis from 'ioredis';
 import { REDIS } from '../redis/redis.constants';
 import { BillingPort, type BillingEventType, type BillingProviderEvent } from './billing.port';

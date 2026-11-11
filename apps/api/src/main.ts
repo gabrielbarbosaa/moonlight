@@ -60,7 +60,7 @@ async function bootstrap() {
 
   if (process.env.NODE_ENV !== 'production') {
     const config = new DocumentBuilder()
-      .setTitle('SiteBuilder API')
+      .setTitle('Moonlight API')
       .setVersion('0.0.0')
       .addCookieAuth(SESSION_COOKIE)
       .build();

@@ -6,7 +6,7 @@ import {
   pageSchema,
   starterPage,
   type PageContent,
-} from '@sitebuilder/schemas';
+} from '@moonlight/schemas';
 import { isDeepStrictEqual } from 'node:util';
 import { EntitlementsService } from '../billing/entitlements.service';
 import { PrismaService } from '../prisma/prisma.service';

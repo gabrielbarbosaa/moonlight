@@ -1,6 +1,6 @@
 'use client';
 
-import type { Block, Theme } from '@sitebuilder/schemas';
+import type { Block, Theme } from '@moonlight/schemas';
 import { Icon } from '@/components/icons';
 import { moveItem, newId } from '@/lib/page-editor';
 import { TextField } from './fields';

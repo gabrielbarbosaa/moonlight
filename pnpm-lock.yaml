@@ -32,6 +32,9 @@ importers:
 
   apps/api:
     dependencies:
+      '@moonlight/schemas':
+        specifier: workspace:*
+        version: link:../../packages/schemas
       '@nestjs/common':
         specifier: ^10.4.15
         version: 10.4.22(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -53,9 +56,6 @@ importers:
       '@prisma/client':
         specifier: ^6.1.0
         version: 6.19.3(prisma@6.19.3(typescript@5.9.3))(typescript@5.9.3)
-      '@sitebuilder/schemas':
-        specifier: workspace:*
-        version: link:../../packages/schemas
       argon2:
         specifier: ^0.45.2
         version: 0.45.2
@@ -114,10 +114,10 @@ importers:
       '@hookform/resolvers':
         specifier: ^3.9.1
         version: 3.10.0(react-hook-form@7.92.0(@types/react@19.3.0)(react@19.3.1))
-      '@sitebuilder/renderer':
+      '@moonlight/renderer':
         specifier: workspace:*
         version: link:../../packages/renderer
-      '@sitebuilder/schemas':
+      '@moonlight/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
       '@tanstack/react-query':
@@ -157,7 +157,7 @@ importers:
 
   packages/renderer:
     dependencies:
-      '@sitebuilder/schemas':
+      '@moonlight/schemas':
         specifier: workspace:*
         version: link:../schemas
     devDependencies:

@@ -1,4 +1,4 @@
-# SiteBuilder
+# Moonlight
 
 Plataforma multi-tenant para criar páginas pessoais a partir de blocos (header, hero, links, texto, footer), com painel administrativo, analytics e, mais adiante, agenda como módulo opcional.
 

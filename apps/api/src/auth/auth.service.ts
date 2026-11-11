@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
 import { createHmac, randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
-import type { LoginInput, RegisterInput, VerifyCodeInput } from '@sitebuilder/schemas';
+import type { LoginInput, RegisterInput, VerifyCodeInput } from '@moonlight/schemas';
 import { MailPort } from '../mail/mail.port';
 import { PrismaService } from '../prisma/prisma.service';
 import { SessionService } from './session.service';

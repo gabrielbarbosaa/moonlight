@@ -15,7 +15,7 @@ COPY packages/renderer/package.json packages/renderer/package.json
 RUN pnpm install --frozen-lockfile --filter api...
 COPY packages/schemas packages/schemas
 COPY apps/api apps/api
-RUN pnpm --filter @sitebuilder/schemas build && pnpm --filter api build
+RUN pnpm --filter @moonlight/schemas build && pnpm --filter api build
 RUN node -e "const fs=require('fs');const p=JSON.parse(fs.readFileSync('package.json','utf8'));delete p.scripts.prepare;fs.writeFileSync('package.json',JSON.stringify(p))" \
   && rm -rf node_modules apps/api/node_modules packages/schemas/node_modules \
   && pnpm install --prod --frozen-lockfile --filter api... \

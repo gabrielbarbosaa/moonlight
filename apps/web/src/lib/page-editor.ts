@@ -1,4 +1,4 @@
-import { pageSchema, type Block, type BlockType, type PageContent } from '@sitebuilder/schemas';
+import { pageSchema, type Block, type BlockType, type PageContent } from '@moonlight/schemas';
 
 export const BLOCK_LABELS: Record<BlockType, string> = {
   header: 'Cabeçalho',

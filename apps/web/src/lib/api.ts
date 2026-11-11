@@ -15,7 +15,7 @@ import type {
   LoginInput,
   RegisterInput,
   VerifyCodeInput,
-} from '@sitebuilder/schemas';
+} from '@moonlight/schemas';
 
 export const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000',

@@ -1,4 +1,4 @@
-import { safeUrlSchema, type FontId, type Theme } from '@sitebuilder/schemas';
+import { safeUrlSchema, type FontId, type Theme } from '@moonlight/schemas';
 import type { CSSProperties } from 'react';
 
 export function safeHref(value: string | undefined): string | undefined {

@@ -28,7 +28,7 @@ export function Brand({ href = '/' }: { href?: string }) {
   return (
     <Link href={href} className="brand">
       <BrandMark />
-      SiteBuilder
+      Moonlight
     </Link>
   );
 }

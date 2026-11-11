@@ -1,5 +1,5 @@
-import { PageRenderer } from '@sitebuilder/renderer';
-import type { PageContent } from '@sitebuilder/schemas';
+import { PageRenderer } from '@moonlight/renderer';
+import type { PageContent } from '@moonlight/schemas';
 import { notFound } from 'next/navigation';
 import { AgendaLink } from '@/components/agenda-link';
 import { ReportLink } from '@/components/report-link';

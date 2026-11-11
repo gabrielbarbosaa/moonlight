@@ -1,6 +1,6 @@
 'use client';
 
-import type { SandboxSessionInfo } from '@sitebuilder/schemas';
+import type { SandboxSessionInfo } from '@moonlight/schemas';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
 import { Brand } from '@/components/brand';

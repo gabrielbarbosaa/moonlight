@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-SiteBuilder (repo folder `moonlight`): a multi-tenant platform for building personal pages from blocks (header, hero, links, text, footer), with an admin panel and analytics. Study/portfolio project meant to run 100% locally at no cost. README and code comments are in Portuguese. The README roadmap is implemented end to end (auth with 2FA, tenants, blocks and renderer, editor, analytics, backoffice, booking, plans and billing sandbox). There are no automated tests yet (each package's `test` script is a placeholder `echo`); verification so far is `pnpm verify` plus manual end-to-end runs.
+Moonlight (repo folder `moonlight`): a multi-tenant platform for building personal pages from blocks (header, hero, links, text, footer), with an admin panel and analytics. Study/portfolio project meant to run 100% locally at no cost. README and code comments are in Portuguese. The README roadmap is implemented end to end (auth with 2FA, tenants, blocks and renderer, editor, analytics, backoffice, booking, plans and billing sandbox). There are no automated tests yet (each package's `test` script is a placeholder `echo`); verification so far is `pnpm verify` plus manual end-to-end runs.
 
 ## Conventions
 
@@ -19,7 +19,7 @@ pnpm 9 workspaces + Turborepo, Node >= 20 (`.nvmrc`). Run from the repo root:
 pnpm install
 cp .env.example .env
 pnpm infra:up                          # Postgres 17, Redis, Mailpit (:8026), MinIO (:9001) via docker compose
-pnpm --filter @sitebuilder/schemas build   # required once before api/web (they consume its dist/)
+pnpm --filter @moonlight/schemas build   # required once before api/web (they consume its dist/)
 pnpm db:migrate                        # prisma migrate dev (api)
 pnpm dev                               # web :3000, api :4000
 pnpm verify                            # lint + typecheck + test + build (Turbo-cached)
@@ -29,7 +29,7 @@ pnpm format                            # prettier --write .
 ```
 
 - `lint` in every package is just `tsc --noEmit` (no ESLint). In `apps/web` both `lint` and `typecheck` use `tsconfig.typecheck.json`, which avoids `.next/` so they cannot race with `next build`.
-- Turbo tasks `build`, `lint`, `typecheck`, and `test` all depend on `^build`, so `@sitebuilder/schemas` is built first automatically when running through Turbo; when running a package script directly, build schemas yourself.
+- Turbo tasks `build`, `lint`, `typecheck`, and `test` all depend on `^build`, so `@moonlight/schemas` is built first automatically when running through Turbo; when running a package script directly, build schemas yourself.
 - api `build`/`dev`/`typecheck` run `prisma generate` first.
 
 ## Git hooks (Husky)
@@ -43,9 +43,9 @@ pnpm format                            # prettier --write .
 
 - `apps/web`: Next.js 15 (App Router, React 19). Routes: landing, `/admin`, and `/s/[tenant]` for public tenant pages.
 - `apps/api`: NestJS 10 + Prisma 6 (PostgreSQL). Entry `src/main.ts`, `PrismaModule`/`PrismaService`, `health` controller.
-- `packages/schemas` (`@sitebuilder/schemas`): shared Zod schemas (auth, tenant, blocks, `RESERVED_SLUGS`), compiled to `dist/` and imported by both apps. Pages are stored as JSONB with a `schemaVersion` and validated by the same Zod schema on front and back, so change block shapes here, not in the apps.
+- `packages/schemas` (`@moonlight/schemas`): shared Zod schemas (auth, tenant, blocks, `RESERVED_SLUGS`), compiled to `dist/` and imported by both apps. Pages are stored as JSONB with a `schemaVersion` and validated by the same Zod schema on front and back, so change block shapes here, not in the apps.
 
-- `packages/renderer` (`@sitebuilder/renderer`): React `PageRenderer` that turns a `PageContent` into the public page. It re-validates with `pageSchema` and passes every URL through `safeHref`. The editor preview should reuse it. Rebuild it (and schemas) after changes, since apps consume `dist/`.
+- `packages/renderer` (`@moonlight/renderer`): React `PageRenderer` that turns a `PageContent` into the public page. It re-validates with `pageSchema` and passes every URL through `safeHref`. The editor preview should reuse it. Rebuild it (and schemas) after changes, since apps consume `dist/`.
 
 ### Analytics
 

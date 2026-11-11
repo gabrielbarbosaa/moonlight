@@ -1,4 +1,4 @@
-import { analyticsQuerySchema, trackEventSchema } from '@sitebuilder/schemas';
+import { analyticsQuerySchema, trackEventSchema } from '@moonlight/schemas';
 import { createZodDto } from 'nestjs-zod';
 
 export class TrackEventDto extends createZodDto(trackEventSchema) {}

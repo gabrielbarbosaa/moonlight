@@ -1,4 +1,4 @@
-import { createReportSchema, createTenantSchema, slugSchema } from '@sitebuilder/schemas';
+import { createReportSchema, createTenantSchema, slugSchema } from '@moonlight/schemas';
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 

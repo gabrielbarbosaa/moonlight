@@ -2,7 +2,7 @@ import {
   checkoutSchema,
   sandboxCompleteSchema,
   sandboxSessionParamSchema,
-} from '@sitebuilder/schemas';
+} from '@moonlight/schemas';
 import { createZodDto } from 'nestjs-zod';
 
 export class CheckoutDto extends createZodDto(checkoutSchema) {}

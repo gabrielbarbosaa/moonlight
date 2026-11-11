@@ -4,7 +4,7 @@ import {
   createBookingSchema,
   idParamSchema,
   slotsQuerySchema,
-} from '@sitebuilder/schemas';
+} from '@moonlight/schemas';
 import { createZodDto } from 'nestjs-zod';
 
 export class BookingSettingsDto extends createZodDto(bookingSettingsSchema) {}

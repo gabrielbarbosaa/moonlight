@@ -4,7 +4,7 @@ import {
   resolveReportSchema,
   suspendTenantSchema,
   tenantIdParamSchema,
-} from '@sitebuilder/schemas';
+} from '@moonlight/schemas';
 import { createZodDto } from 'nestjs-zod';
 
 export class ListTenantsQueryDto extends createZodDto(listTenantsQuerySchema) {}

@@ -1,5 +1,5 @@
 {
-  "name": "@sitebuilder/renderer",
+  "name": "@moonlight/renderer",
   "version": "0.0.0",
   "private": true,
   "main": "./dist/index.js",
@@ -12,10 +12,10 @@
     "dev": "tsc -p tsconfig.json --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "tsc -p tsconfig.json --noEmit",
-    "test": "echo \"sem testes ainda em @sitebuilder/renderer\""
+    "test": "echo \"sem testes ainda em @moonlight/renderer\""
   },
   "dependencies": {
-    "@sitebuilder/schemas": "workspace:*"
+    "@moonlight/schemas": "workspace:*"
   },
   "peerDependencies": {
     "react": "^19.0.0"

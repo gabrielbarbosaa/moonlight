@@ -1,4 +1,4 @@
-import { pageSchema, type Block, type PageContent, type Theme } from '@sitebuilder/schemas';
+import { pageSchema, type Block, type PageContent, type Theme } from '@moonlight/schemas';
 import type { ReactNode } from 'react';
 import { renderBlock } from './blocks';
 import { RENDERER_STYLES } from './styles';

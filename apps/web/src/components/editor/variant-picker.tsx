@@ -1,7 +1,7 @@
 'use client';
 
-import { BlockPreview } from '@sitebuilder/renderer';
-import type { BlockType, Theme } from '@sitebuilder/schemas';
+import { BlockPreview } from '@moonlight/renderer';
+import type { BlockType, Theme } from '@moonlight/schemas';
 import { PLACEHOLDER_IMAGE, VARIANTS, sampleBlock } from '@/lib/page-editor';
 
 export function VariantPicker({

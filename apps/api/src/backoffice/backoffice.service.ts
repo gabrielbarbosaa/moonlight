@@ -9,7 +9,7 @@ import type {
   ListTenantsQuery,
   Paginated,
   ResolveReportInput,
-} from '@sitebuilder/schemas';
+} from '@moonlight/schemas';
 import { PrismaService } from '../prisma/prisma.service';
 
 const PAGE_SIZE = 20;

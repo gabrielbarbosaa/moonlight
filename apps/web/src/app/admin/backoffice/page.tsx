@@ -1,6 +1,6 @@
 'use client';
 
-import { REPORT_REASON_LABELS, type BackofficeTenant } from '@sitebuilder/schemas';
+import { REPORT_REASON_LABELS, type BackofficeTenant } from '@moonlight/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { useRouter } from 'next/navigation';

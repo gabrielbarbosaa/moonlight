@@ -1,6 +1,6 @@
 'use client';
 
-import type { Entitlements, PlanDefinition } from '@sitebuilder/schemas';
+import type { Entitlements, PlanDefinition } from '@moonlight/schemas';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import { useRouter, useSearchParams } from 'next/navigation';

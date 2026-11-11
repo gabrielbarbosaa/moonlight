@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { createTenantSchema, slugSchema } from '@sitebuilder/schemas';
+import { createTenantSchema, slugSchema } from '@moonlight/schemas';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { getErrorMessage, tenantsApi } from '@/lib/api';
