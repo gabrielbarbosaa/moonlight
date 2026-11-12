@@ -24,9 +24,9 @@ Regras que valem para todo projeto da VPS:
 - Banco e cache ficam só na rede interna do próprio projeto, sem se ligar à rede `proxy`.
 - Cada projeto tem seu `.env`, seus volumes e seu domínio. O trecho de roteamento dele fica em `~/proxy/sites/<projeto>.caddy`.
 
-O Moonlight serve três endereços: `seudominio.com` (landing e `/admin`), `api.seudominio.com` (API) e `*.seudominio.com` (páginas dos usuários, como `maria.seudominio.com`). O Caddy emite o certificado de cada subdomínio de usuário no primeiro acesso, e só para páginas que existem (a API confirma em `/tenants/domain-check`), então não precisa de certificado wildcard.
+O Moonlight serve três endereços: `moonlight.gabrielbarbosadev.com.br` (landing e `/admin`), `api.moonlight.gabrielbarbosadev.com.br` (API) e `*.moonlight.gabrielbarbosadev.com.br` (páginas dos usuários, como `maria.moonlight.gabrielbarbosadev.com.br`). O Caddy emite o certificado de cada subdomínio de usuário no primeiro acesso, e só para páginas que existem (a API confirma em `/tenants/domain-check`), então não precisa de certificado wildcard.
 
-> Use um domínio (ou subdomínio) **dedicado** ao Moonlight, como `moonlight.com.br`. O wildcard `*.dominio` captura qualquer subdomínio que não tenha um site próprio no proxy.
+> O Moonlight usa o subdomínio **dedicado** `moonlight.gabrielbarbosadev.com.br` dentro do seu domínio `gabrielbarbosadev.com.br`. O wildcard `*.moonlight.gabrielbarbosadev.com.br` só captura endereços dentro dele, então outros projetos (`outro.gabrielbarbosadev.com.br`) não são afetados. Não crie um wildcard `*.gabrielbarbosadev.com.br` na raiz.
 
 ## O que você precisa antes
 
@@ -38,13 +38,12 @@ O Moonlight serve três endereços: `seudominio.com` (landing e `/admin`), `api.
 
 No painel de DNS do domínio do Moonlight, crie três registros apontando para o **IP da VPS**:
 
-| Tipo | Nome  | Valor     |
-| ---- | ----- | --------- |
-| A    | `@`   | IP da VPS |
-| A    | `*`   | IP da VPS |
-| A    | `api` | IP da VPS |
+| Tipo | Nome          | Valor     |
+| ---- | ------------- | --------- |
+| A    | `moonlight`   | IP da VPS |
+| A    | `*.moonlight` | IP da VPS |
 
-O `*` faz `maria.seudominio.com` funcionar. Sem wildcard, as páginas continuam em `seudominio.com/s/maria`. Confira com `ping api.seudominio.com` (deve mostrar o IP da VPS; a propagação pode levar de minutos a horas).
+O `*.moonlight` cobre `api.moonlight` e faz `maria.moonlight.gabrielbarbosadev.com.br` funcionar. Sem wildcard, as páginas continuam em `moonlight.gabrielbarbosadev.com.br/s/maria`. Confira com `ping api.moonlight.gabrielbarbosadev.com.br` (deve mostrar o IP da VPS; a propagação pode levar de minutos a horas).
 
 ## 2. Primeiro acesso à VPS
 
@@ -123,7 +122,7 @@ chmod +x init-env.sh backup.sh
 nano .env
 ```
 
-O script pergunta o domínio e o seu e-mail, gera todas as senhas e segredos e cria o `moonlight.caddy` (o trecho de roteamento deste projeto). No `nano`, preencha só o bloco de e-mail (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`). Salve com `Ctrl+O`, `Enter` e saia com `Ctrl+X`.
+O script pergunta o domínio (Enter aceita `moonlight.gabrielbarbosadev.com.br`) e o seu e-mail, gera todas as senhas e segredos e cria o `moonlight.caddy` (o trecho de roteamento deste projeto). No `nano`, preencha só o bloco de e-mail (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`). Salve com `Ctrl+O`, `Enter` e saia com `Ctrl+X`.
 
 O `.env` guarda segredos e já está no `.gitignore`.
 
@@ -146,13 +145,13 @@ docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
 
 Pronto, sem derrubar nada:
 
-- `https://api.seudominio.com/health` responde `{"status":"ok","database":"up"}`.
-- `https://seudominio.com` abre a landing.
+- `https://api.moonlight.gabrielbarbosadev.com.br/health` responde `{"status":"ok","database":"up"}`.
+- `https://moonlight.gabrielbarbosadev.com.br` abre a landing.
 
 ## 9. Primeiro uso
 
-1. Acesse `https://seudominio.com/admin/login` e crie uma conta **com o e-mail informado no passo 6**. O código de 2FA chega por e-mail e, ao confirmá-lo, a conta vira superadmin (`/admin/backoffice`).
-2. Crie uma página (ex.: `maria`) e abra `https://maria.seudominio.com`. O primeiro acesso demora um instante, porque o certificado é emitido ali.
+1. Acesse `https://moonlight.gabrielbarbosadev.com.br/admin/login` e crie uma conta **com o e-mail informado no passo 6**. O código de 2FA chega por e-mail e, ao confirmá-lo, a conta vira superadmin (`/admin/backoffice`).
+2. Crie uma página (ex.: `maria`) e abra `https://maria.moonlight.gabrielbarbosadev.com.br`. O primeiro acesso demora um instante, porque o certificado é emitido ali.
 
 ## Adicionar outro projeto à VPS
 
@@ -232,11 +231,11 @@ docker compose exec -T moonlight-api tar -C /data/media -xzf - < backups/ARQUIVO
 - **Subdomínio de uma página com erro de certificado:** só recebe certificado se a página existir e estiver ativa, e se o registro DNS `*` existir.
 - **Erro 502:** o projeto não está de pé ou o nome do serviço no `.caddy` não bate com o do compose. Veja `docker compose ps`.
 - **Erro de CORS no painel:** `WEB_URL` deve ser exatamente a origem do front, com `https://` e sem barra no final.
-- **Login não mantém a sessão:** front e API precisam estar sob o mesmo domínio raiz (é o caso: `seudominio.com` e `api.seudominio.com`).
+- **Login não mantém a sessão:** front e API precisam estar sob o mesmo domínio raiz (é o caso: `moonlight.gabrielbarbosadev.com.br` e `api.moonlight.gabrielbarbosadev.com.br`).
 - **Código de 2FA não chega:** veja `docker compose logs moonlight-api` e as variáveis `SMTP_*`.
 - **Mudou o domínio no `.env`:** as variáveis `NEXT_PUBLIC_*` entram no build, então rode `docker compose up -d --build` de novo e atualize o `moonlight.caddy`.
 - **Checkout responde 404:** com `BILLING_SANDBOX_ENABLED=false` o checkout simulado fica desligado. O único provedor de pagamento hoje é o sandbox, que não cobra de verdade.
 
 ## Front na Vercel (alternativa)
 
-O front também pode ficar na Vercel, com a VPS só para a API: o `apps/web/vercel.json` já existe para isso. Suba apenas a API (`docker compose up -d --build moonlight-api`), deixe no `moonlight.caddy` somente o bloco `api.`, e configure na Vercel: Root Directory `apps/web` (com "Include source files outside of the Root Directory"), as variáveis `NEXT_PUBLIC_API_URL`, `API_URL` (`https://api.seudominio.com`), `ROOT_DOMAIN` e `NEXT_PUBLIC_ROOT_DOMAIN` (`seudominio.com`) e os domínios `seudominio.com` e `*.seudominio.com`.
+O front também pode ficar na Vercel, com a VPS só para a API: o `apps/web/vercel.json` já existe para isso. Suba apenas a API (`docker compose up -d --build moonlight-api`), deixe no `moonlight.caddy` somente o bloco `api.`, e configure na Vercel: Root Directory `apps/web` (com "Include source files outside of the Root Directory"), as variáveis `NEXT_PUBLIC_API_URL`, `API_URL` (`https://api.moonlight.gabrielbarbosadev.com.br`), `ROOT_DOMAIN` e `NEXT_PUBLIC_ROOT_DOMAIN` (`moonlight.gabrielbarbosadev.com.br`) e os domínios `moonlight.gabrielbarbosadev.com.br` e `*.moonlight.gabrielbarbosadev.com.br`.

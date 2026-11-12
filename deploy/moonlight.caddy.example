@@ -1,14 +1,14 @@
-api.seudominio.com {
+api.moonlight.gabrielbarbosadev.com.br {
 	encode gzip
 	reverse_proxy moonlight-api:4000
 }
 
-seudominio.com {
+moonlight.gabrielbarbosadev.com.br {
 	encode gzip
 	reverse_proxy moonlight-web:3000
 }
 
-*.seudominio.com {
+*.moonlight.gabrielbarbosadev.com.br {
 	tls {
 		on_demand
 	}

@@ -7,7 +7,9 @@ if [ -f .env ]; then
   exit 1
 fi
 
-read -rp "Seu domínio, sem https:// (ex: meusite.com.br): " DOMAIN
+DEFAULT_DOMAIN="moonlight.gabrielbarbosadev.com.br"
+read -rp "Domínio do Moonlight, sem https:// [$DEFAULT_DOMAIN]: " DOMAIN
+DOMAIN="${DOMAIN:-$DEFAULT_DOMAIN}"
 read -rp "Seu e-mail (vira superadmin do backoffice): " ADMIN
 
 if [ -z "$DOMAIN" ] || [ -z "$ADMIN" ]; then
@@ -18,7 +20,7 @@ fi
 cp .env.production.example .env
 chmod 600 .env
 
-sed -i "s/seudominio\.com/$DOMAIN/g" .env
+sed -i "s/moonlight\.gabrielbarbosadev\.com\.br/$DOMAIN/g" .env
 sed -i "s|^SUPERADMIN_EMAILS=.*|SUPERADMIN_EMAILS=$ADMIN|" .env
 
 for key in POSTGRES_PASSWORD REDIS_PASSWORD SESSION_SECRET BILLING_WEBHOOK_SECRET; do
@@ -26,7 +28,7 @@ for key in POSTGRES_PASSWORD REDIS_PASSWORD SESSION_SECRET BILLING_WEBHOOK_SECRE
 done
 
 cp moonlight.caddy.example moonlight.caddy
-sed -i "s/seudominio\.com/$DOMAIN/g" moonlight.caddy
+sed -i "s/moonlight\.gabrielbarbosadev\.com\.br/$DOMAIN/g" moonlight.caddy
 
 echo
 echo ".env criado com domínio, segredos e senhas gerados."
