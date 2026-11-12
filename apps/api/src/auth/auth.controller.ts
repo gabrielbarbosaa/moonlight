@@ -1,6 +1,6 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res, UseGuards } from '@nestjs/common';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { PrismaService } from '../prisma/prisma.service';
 import { RateLimit, RateLimitGuard } from '../redis/rate-limit.guard';
 import { LoginDto, RegisterDto, VerifyCodeDto } from './auth.dto';
@@ -21,8 +21,8 @@ export class AuthController {
   @UseGuards(RateLimitGuard)
   @RateLimit({ name: 'auth-register', limit: 5, windowSeconds: 3600 })
   @ApiOperation({ summary: 'Cria a conta e envia o código de 2FA por e-mail' })
-  register(@Body() body: RegisterDto) {
-    return this.auth.register(body);
+  register(@Body() body: RegisterDto, @Req() req: Request) {
+    return this.auth.register(body, req.ip);
   }
 
   @Post('login')
@@ -30,8 +30,8 @@ export class AuthController {
   @UseGuards(RateLimitGuard)
   @RateLimit({ name: 'auth-login', limit: 10, windowSeconds: 900, perEmail: { limit: 5 } })
   @ApiOperation({ summary: 'Valida a senha e envia o código de 2FA por e-mail' })
-  login(@Body() body: LoginDto) {
-    return this.auth.login(body);
+  login(@Body() body: LoginDto, @Req() req: Request) {
+    return this.auth.login(body, req.ip);
   }
 
   @Post('verify')

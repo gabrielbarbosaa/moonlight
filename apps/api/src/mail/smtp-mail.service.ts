@@ -41,15 +41,6 @@ export class SmtpMailService extends MailPort {
     this.from = config.get<string>('MAIL_FROM', 'Moonlight <no-reply@moonlight.local>');
   }
 
-  async sendAuthCode(to: string, code: string, expiresInMinutes: number) {
-    await this.transporter.sendMail({
-      from: this.from,
-      to,
-      subject: `Seu código de acesso: ${code}`,
-      text: `Seu código de acesso é ${code}. Ele expira em ${expiresInMinutes} minutos.`,
-    });
-  }
-
   async sendBookingConfirmation(to: string, details: BookingMailDetails) {
     await this.transporter.sendMail({
       from: this.from,

@@ -1,28 +1,26 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as argon2 from 'argon2';
-import { createHmac, randomInt, randomUUID, timingSafeEqual } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import type { LoginInput, RegisterInput, VerifyCodeInput } from '@moonlight/schemas';
-import { MailPort } from '../mail/mail.port';
+import { OtpPort } from '../otp/otp.port';
 import { PrismaService } from '../prisma/prisma.service';
 import { SessionService } from './session.service';
 
-const CODE_TTL_MINUTES = 10;
+const CHALLENGE_TTL_MINUTES = 10;
 const MAX_CODE_ATTEMPTS = 5;
 
 @Injectable()
 export class AuthService {
-  private readonly secret: string;
   private readonly superadminEmails: Set<string>;
   private dummyHash?: Promise<string>;
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mail: MailPort,
+    private readonly otp: OtpPort,
     private readonly sessions: SessionService,
     config: ConfigService,
   ) {
-    this.secret = config.getOrThrow<string>('SESSION_SECRET');
     this.superadminEmails = new Set(
       config
         .get<string>('SUPERADMIN_EMAILS', '')
@@ -32,7 +30,7 @@ export class AuthService {
     );
   }
 
-  async register(input: RegisterInput) {
+  async register(input: RegisterInput, ip?: string) {
     const existing = await this.prisma.user.findUnique({ where: { email: input.email } });
     if (existing) return { challengeId: randomUUID() };
 
@@ -40,10 +38,15 @@ export class AuthService {
     const user = await this.prisma.user.create({
       data: { email: input.email, passwordHash },
     });
-    return this.issueChallenge(user.id, user.email);
+    try {
+      return await this.issueChallenge(user.id, user.email, ip);
+    } catch (error) {
+      await this.prisma.user.delete({ where: { id: user.id } }).catch(() => undefined);
+      throw error;
+    }
   }
 
-  async login(input: LoginInput) {
+  async login(input: LoginInput, ip?: string) {
     const user = await this.prisma.user.findUnique({ where: { email: input.email } });
 
     if (!user) {
@@ -54,7 +57,7 @@ export class AuthService {
     const valid = await argon2.verify(user.passwordHash, input.password);
     if (!valid) throw new UnauthorizedException('Credenciais inválidas');
 
-    return this.issueChallenge(user.id, user.email);
+    return this.issueChallenge(user.id, user.email, ip);
   }
 
   async verifyCode(input: VerifyCodeInput): Promise<{ userId: string; sessionToken: string }> {
@@ -72,8 +75,17 @@ export class AuthService {
 
     const record = await this.prisma.authCode.findUniqueOrThrow({
       where: { id: input.challengeId },
+      select: { id: true, userId: true, user: { select: { email: true } } },
     });
-    if (!this.codeMatches(record.codeHash, record.id, input.code)) {
+
+    const result = await this.otp.verify(record.user.email, input.code);
+    if (result !== 'ok') {
+      if (result === 'too_many_attempts') {
+        await this.prisma.authCode.updateMany({
+          where: { id: record.id, consumedAt: null },
+          data: { consumedAt: now },
+        });
+      }
       throw new UnauthorizedException('Código inválido ou expirado');
     }
 
@@ -99,36 +111,22 @@ export class AuthService {
     await this.sessions.destroy(token);
   }
 
-  private async issueChallenge(userId: string, email: string) {
+  private async issueChallenge(userId: string, email: string, ip?: string) {
+    await this.otp.request(email, ip);
+
     await this.prisma.authCode.updateMany({
       where: { userId, consumedAt: null },
       data: { consumedAt: new Date() },
     });
 
-    const id = randomUUID();
-    const code = randomInt(0, 1_000_000).toString().padStart(6, '0');
-
-    await this.prisma.authCode.create({
+    const challenge = await this.prisma.authCode.create({
       data: {
-        id,
         userId,
-        codeHash: this.hashCode(id, code),
-        expiresAt: new Date(Date.now() + CODE_TTL_MINUTES * 60_000),
+        expiresAt: new Date(Date.now() + CHALLENGE_TTL_MINUTES * 60_000),
       },
+      select: { id: true },
     });
-
-    await this.mail.sendAuthCode(email, code, CODE_TTL_MINUTES);
-    return { challengeId: id };
-  }
-
-  private hashCode(challengeId: string, code: string) {
-    return createHmac('sha256', this.secret).update(`${challengeId}:${code}`).digest('hex');
-  }
-
-  private codeMatches(storedHash: string, challengeId: string, code: string) {
-    const expected = Buffer.from(storedHash, 'hex');
-    const actual = Buffer.from(this.hashCode(challengeId, code), 'hex');
-    return expected.length === actual.length && timingSafeEqual(expected, actual);
+    return { challengeId: challenge.id };
   }
 
   private getDummyHash() {

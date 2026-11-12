@@ -1,4 +1,7 @@
 api.moonlight.gabrielbarbosadev.com.br {
+	tls {
+		on_demand
+	}
 	encode gzip
 	reverse_proxy moonlight-api:4000
 }

@@ -13,7 +13,6 @@ export type BookingMailDetails = {
 export type BookingLinkItem = { when: string; serviceName: string; url: string };
 
 export abstract class MailPort {
-  abstract sendAuthCode(to: string, code: string, expiresInMinutes: number): Promise<void>;
   abstract sendBookingConfirmation(to: string, details: BookingMailDetails): Promise<void>;
   abstract sendBookingNotification(to: string, details: BookingMailDetails): Promise<void>;
   abstract sendBookingCancellation(to: string, details: BookingMailDetails): Promise<void>;

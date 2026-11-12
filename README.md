@@ -46,7 +46,8 @@ Endereços úteis:
 - Painel: http://localhost:3000/admin
 - Página de um tenant: http://maria.localhost:3000 (subdomínios `*.localhost` funcionam direto no navegador) ou http://localhost:3000/s/maria (fallback por caminho)
 - API (health): http://localhost:4000/health
-- Mailpit (e-mails do 2FA): http://localhost:8026
+- Mailpit (e-mails de reserva): http://localhost:8026
+- Código de 2FA: enviado pelo Pygmy; preencha `PYGMY_API_KEY` no `.env`
 - Imagens enviadas: gravadas em `apps/api/storage/media` e servidas em http://localhost:4000/media/files/...
 
 ## Exemplo: MoonBarber
@@ -57,7 +58,7 @@ Uma barbearia fictícia que usa quase tudo da plataforma: tema escuro, destaque 
 pnpm seed:moonbarber
 ```
 
-Depois abra http://localhost:3000/s/moonbarber (agenda em `/s/moonbarber/agenda`). A conta do dono é `moonbarber@example.com` com a senha impressa pelo comando; o código de 2FA chega no Mailpit. Esse comando recria tudo do zero. Só funciona fora de produção.
+Depois abra http://localhost:3000/s/moonbarber (agenda em `/s/moonbarber/agenda`). A conta do dono é `moonbarber@example.com` com a senha impressa pelo comando; o código de 2FA chega por e-mail, enviado pelo Pygmy. Esse comando recria tudo do zero. Só funciona fora de produção.
 
 O exemplo fica salvo no banco e nas imagens em disco, então não precisa rodar nada de novo no dia a dia. Ele também é recriado sozinho quando o banco é refeito (`prisma migrate reset`, que roda o seed automaticamente) e `pnpm db:seed` só o recria se estiver faltando algo (banco ou imagens).
 

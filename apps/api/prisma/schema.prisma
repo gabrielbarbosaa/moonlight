@@ -90,11 +90,10 @@ model BillingEvent {
   @@map("billing_events")
 }
 
-/// Códigos de 2FA enviados por e-mail. Guarda apenas o hash do código.
+/// Desafios de 2FA. O código em si é enviado e validado pelo Pygmy.
 model AuthCode {
   id         String    @id @default(uuid()) @db.Uuid
   userId     String    @db.Uuid
-  codeHash   String
   expiresAt  DateTime
   attempts   Int       @default(0)
   consumedAt DateTime?

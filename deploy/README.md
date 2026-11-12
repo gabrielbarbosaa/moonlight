@@ -32,7 +32,7 @@ O Moonlight serve três endereços: `moonlight.gabrielbarbosadev.com.br` (landin
 
 - Uma VPS **Ubuntu 22.04 ou 24.04** com acesso `root` por SSH. Para vários projetos, prefira 4 GB de RAM ou mais (mínimo 2 GB, com swap) e disco de sobra.
 - Um **domínio** com acesso ao painel de DNS.
-- Uma conta de **e-mail SMTP** (Brevo, Resend, Mailgun, SES ou Gmail com senha de app) para o código de 2FA e os avisos de reserva. Sem isso ninguém consegue entrar.
+- Uma conta de **e-mail SMTP** (Brevo, Resend, Mailgun, SES ou Gmail com senha de app) para os avisos de reserva. O código de 2FA é enviado pelo **Pygmy** (`PYGMY_URL` e `PYGMY_API_KEY` no `.env`); sem a chave ninguém consegue entrar.
 
 ## 1. DNS
 
@@ -122,7 +122,7 @@ chmod +x init-env.sh backup.sh
 nano .env
 ```
 
-O script pergunta o domínio (Enter aceita `moonlight.gabrielbarbosadev.com.br`) e o seu e-mail, gera todas as senhas e segredos e cria o `moonlight.caddy` (o trecho de roteamento deste projeto). No `nano`, preencha só o bloco de e-mail (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`). Salve com `Ctrl+O`, `Enter` e saia com `Ctrl+X`.
+O script pergunta o domínio (Enter aceita `moonlight.gabrielbarbosadev.com.br`) e o seu e-mail, gera todas as senhas e segredos e cria o `moonlight.caddy` (o trecho de roteamento deste projeto). No `nano`, preencha `PYGMY_API_KEY` e o bloco de e-mail (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`). Salve com `Ctrl+O`, `Enter` e saia com `Ctrl+X`.
 
 O `.env` guarda segredos e já está no `.gitignore`.
 
@@ -232,7 +232,7 @@ docker compose exec -T moonlight-api tar -C /data/media -xzf - < backups/ARQUIVO
 - **Erro 502:** o projeto não está de pé ou o nome do serviço no `.caddy` não bate com o do compose. Veja `docker compose ps`.
 - **Erro de CORS no painel:** `WEB_URL` deve ser exatamente a origem do front, com `https://` e sem barra no final.
 - **Login não mantém a sessão:** front e API precisam estar sob o mesmo domínio raiz (é o caso: `moonlight.gabrielbarbosadev.com.br` e `api.moonlight.gabrielbarbosadev.com.br`).
-- **Código de 2FA não chega:** veja `docker compose logs moonlight-api` e as variáveis `SMTP_*`.
+- **Código de 2FA não chega:** veja `docker compose logs moonlight-api` (erros do Pygmy aparecem ali) e confira `PYGMY_URL` e `PYGMY_API_KEY`. O Pygmy permite um novo pedido por e-mail a cada 60 s.
 - **Mudou o domínio no `.env`:** as variáveis `NEXT_PUBLIC_*` entram no build, então rode `docker compose up -d --build` de novo e atualize o `moonlight.caddy`.
 - **Checkout responde 404:** com `BILLING_SANDBOX_ENABLED=false` o checkout simulado fica desligado. O único provedor de pagamento hoje é o sandbox, que não cobra de verdade.
 
