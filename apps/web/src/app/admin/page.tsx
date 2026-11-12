@@ -1,5 +1,6 @@
 'use client';
 
+import { PageRenderer } from '@moonlight/renderer';
 import { useQuery } from '@tanstack/react-query';
 import { isAxiosError } from 'axios';
 import Link from 'next/link';
@@ -7,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { CreateTenantForm, ROOT_DOMAIN } from '@/components/create-tenant-form';
 import { Icon, type IconName } from '@/components/icons';
-import { authApi, billingApi, tenantsApi } from '@/lib/api';
+import { authApi, billingApi, pagesApi, tenantsApi } from '@/lib/api';
 
 type QuickLink = { href: string; icon: IconName; title: string; text: string };
 
@@ -37,6 +38,12 @@ export default function AdminPage() {
     queryKey: ['billing'],
     queryFn: billingApi.me,
     enabled: me.isSuccess,
+  });
+
+  const page = useQuery({
+    queryKey: ['page'],
+    queryFn: pagesApi.getMine,
+    enabled: tenants.isSuccess && Boolean(tenants.data?.[0]),
   });
 
   const unauthorized = isAxiosError(me.error) && me.error.response?.status === 401;
@@ -73,6 +80,7 @@ export default function AdminPage() {
   const tenant = tenants.data?.[0];
   const protocol = typeof window === 'undefined' ? 'http:' : window.location.protocol;
   const publicUrl = tenant ? `${protocol}//${tenant.slug}.${ROOT_DOMAIN}` : '';
+  const preview = page.data?.published ?? page.data?.draft ?? null;
   const planName = billing.data?.plans.find((plan) => plan.id === billing.data?.plan)?.name;
 
   const quickLinks: QuickLink[] = [
@@ -143,20 +151,10 @@ export default function AdminPage() {
         </p>
       )}
 
-      <div
-        className="card"
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-          marginBottom: 20,
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-            <h2 style={{ margin: 0 }}>{tenant.name}</h2>
+      <section className="dash-hero lp-night">
+        <div className="lp-stars" aria-hidden="true" />
+        <div className="dash-hero-copy">
+          <div className="dash-status">
             <span
               className={tenant.status === 'ACTIVE' ? 'badge badge-success' : 'badge badge-danger'}
             >
@@ -164,24 +162,30 @@ export default function AdminPage() {
             </span>
             {planName && <span className="badge">{planName}</span>}
           </div>
-          <a href={publicUrl} target="_blank" rel="noreferrer">
+          <h2>{tenant.name}</h2>
+          <a className="dash-url" href={publicUrl} target="_blank" rel="noreferrer">
             {tenant.slug}.{ROOT_DOMAIN}
           </a>
-          <p className="hint" style={{ margin: '2px 0 0' }}>
+          <p className="dash-alt">
             Também acessível em <a href={`/s/${tenant.slug}`}>/s/{tenant.slug}</a>
           </p>
+          <div className="dash-actions">
+            <Link className="btn btn-primary btn-lg" href="/admin/editor">
+              <Icon name="pencil" />
+              Editar página
+            </Link>
+            <a className="btn btn-lg" href={publicUrl} target="_blank" rel="noreferrer">
+              <Icon name="external" />
+              Ver página
+            </a>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <a className="btn" href={publicUrl} target="_blank" rel="noreferrer">
-            <Icon name="external" />
-            Ver página
-          </a>
-          <Link className="btn btn-primary" href="/admin/editor">
-            <Icon name="pencil" />
-            Editar página
-          </Link>
-        </div>
-      </div>
+        {preview && (
+          <div className="dash-phone" aria-hidden="true">
+            <PageRenderer content={preview} fill="container" />
+          </div>
+        )}
+      </section>
 
       <div className="card-grid">
         {quickLinks.map((link) => (

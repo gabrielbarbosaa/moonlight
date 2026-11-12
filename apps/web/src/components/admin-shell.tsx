@@ -42,6 +42,8 @@ export function AdminShell({ children }: { children: ReactNode }) {
 
   const items = me.data?.role === 'SUPERADMIN' ? [...NAV, SUPERADMIN_NAV] : NAV;
 
+  if (isAuthPage) return <>{children}</>;
+
   return (
     <>
       <header className="shell-header">

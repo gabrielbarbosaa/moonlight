@@ -6,7 +6,15 @@ import { loginSchema, registerSchema, verifyCodeSchema } from '@moonlight/schema
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { PageRenderer } from '@moonlight/renderer';
+import { THEME_PRESETS, samplePage } from '@moonlight/schemas';
+import { Brand } from '@/components/brand';
+import { Icon } from '@/components/icons';
+import { ThemeToggle } from '@/components/theme-toggle';
 import { authApi, getErrorMessage } from '@/lib/api';
+
+const asideTheme = THEME_PRESETS.find((item) => item.id === 'aurora')?.theme;
+const asidePage = samplePage(asideTheme ?? THEME_PRESETS[0].theme, 'Studio Aurora');
 
 const codeSchema = verifyCodeSchema.pick({ code: true });
 
@@ -127,39 +135,75 @@ export default function LoginPage() {
   }, []);
 
   return (
-    <div className="auth-wrap">
-      <div className="auth-card">
-        <h1>
-          {challengeId ? 'Confirme seu e-mail' : mode === 'login' ? 'Entrar' : 'Criar sua conta'}
-        </h1>
-        {!challengeId && (
-          <p className="muted">
-            {mode === 'login'
-              ? 'Acesse o painel da sua página.'
-              : 'Comece grátis. Você poderá mudar o visual quando quiser.'}
-          </p>
-        )}
+    <div className="auth-split">
+      <aside className="auth-aside lp-night" aria-hidden="true">
+        <div className="lp-stars" />
+        <div className="auth-moon" />
+        <Brand />
+        <div className="auth-aside-copy">
+          <h2>
+            Sua página, <span className="lp-gradient-text">brilhando</span> em minutos
+          </h2>
+          <ul className="auth-points">
+            <li>
+              <Icon name="check" />
+              Blocos, temas e animações sem código
+            </li>
+            <li>
+              <Icon name="check" />
+              Agenda de reservas e estatísticas
+            </li>
+            <li>
+              <Icon name="check" />
+              Pré-visualização ao vivo no celular
+            </li>
+          </ul>
+        </div>
+        <div className="auth-phone">
+          <PageRenderer content={asidePage} fill="container" />
+        </div>
+      </aside>
 
-        {challengeId ? (
-          <CodeForm challengeId={challengeId} onBack={() => setChallengeId(null)} />
-        ) : (
-          <>
-            <CredentialsForm key={mode} mode={mode} onChallenge={setChallengeId} />
-            <p className="muted" style={{ margin: '22px 0 0', textAlign: 'center' }}>
-              {mode === 'login' ? 'Ainda não tem conta? ' : 'Já tem conta? '}
-              <a
-                href="#"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setMode(mode === 'login' ? 'register' : 'login');
-                }}
-              >
-                {mode === 'login' ? 'Criar conta' : 'Entrar'}
-              </a>
+      <section className="auth-main">
+        <div className="auth-top">
+          <span className="auth-top-brand">
+            <Brand />
+          </span>
+          <ThemeToggle />
+        </div>
+        <div className="auth-card">
+          <h1>
+            {challengeId ? 'Confirme seu e-mail' : mode === 'login' ? 'Entrar' : 'Criar sua conta'}
+          </h1>
+          {!challengeId && (
+            <p className="muted">
+              {mode === 'login'
+                ? 'Acesse o painel da sua página.'
+                : 'Comece grátis. Você poderá mudar o visual quando quiser.'}
             </p>
-          </>
-        )}
-      </div>
+          )}
+
+          {challengeId ? (
+            <CodeForm challengeId={challengeId} onBack={() => setChallengeId(null)} />
+          ) : (
+            <>
+              <CredentialsForm key={mode} mode={mode} onChallenge={setChallengeId} />
+              <p className="muted" style={{ margin: '22px 0 0', textAlign: 'center' }}>
+                {mode === 'login' ? 'Ainda não tem conta? ' : 'Já tem conta? '}
+                <a
+                  href="#"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    setMode(mode === 'login' ? 'register' : 'login');
+                  }}
+                >
+                  {mode === 'login' ? 'Criar conta' : 'Entrar'}
+                </a>
+              </p>
+            </>
+          )}
+        </div>
+      </section>
     </div>
   );
 }

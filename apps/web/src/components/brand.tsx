@@ -12,14 +12,22 @@ export function BrandMark() {
           y2="32"
           gradientUnits="userSpaceOnUse"
         >
-          <stop offset="0" stopColor="#6366f1" />
-          <stop offset="1" stopColor="#a855f7" />
+          <stop offset="0" stopColor="#6c47ff" />
+          <stop offset="0.6" stopColor="#a64bff" />
+          <stop offset="1" stopColor="#ff6ad5" />
         </linearGradient>
+        <mask id="brand-moon-cut">
+          <rect width="32" height="32" fill="#fff" />
+          <circle cx="19.6" cy="12.4" r="7.4" fill="#000" />
+        </mask>
       </defs>
-      <rect width="32" height="32" rx="9" fill="url(#brand-gradient)" />
-      <rect x="8" y="9" width="16" height="3.6" rx="1.8" fill="#fff" />
-      <rect x="8" y="14.2" width="10.5" height="3.6" rx="1.8" fill="#fff" fillOpacity="0.85" />
-      <rect x="8" y="19.4" width="13" height="3.6" rx="1.8" fill="#fff" fillOpacity="0.65" />
+      <rect width="32" height="32" rx="10" fill="url(#brand-gradient)" />
+      <circle cx="15" cy="17" r="8.6" fill="#fff" mask="url(#brand-moon-cut)" />
+      <path
+        d="M23.6 5.6l.9 2.3 2.3.9-2.3.9-.9 2.3-.9-2.3-2.3-.9 2.3-.9z"
+        fill="#fff"
+        fillOpacity="0.95"
+      />
     </svg>
   );
 }

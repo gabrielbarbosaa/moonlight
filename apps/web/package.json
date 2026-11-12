@@ -11,6 +11,8 @@
     "test": "echo \"sem testes ainda em web\""
   },
   "dependencies": {
+    "@fontsource-variable/bricolage-grotesque": "5.3.0",
+    "@fontsource-variable/plus-jakarta-sans": "5.3.0",
     "@hookform/resolvers": "^3.9.1",
     "@moonlight/renderer": "workspace:*",
     "@moonlight/schemas": "workspace:*",

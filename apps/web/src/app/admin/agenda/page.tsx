@@ -13,7 +13,11 @@ import { useEffect, useState } from 'react';
 import { Icon } from '@/components/icons';
 import { billingApi, bookingApi, getErrorMessage } from '@/lib/api';
 
-const DURATIONS = [15, 30, 45, 60, 90, 120, 180, 240];
+const DURATIONS = [15, 30, 45, 60, 75, 90, 120, 180, 240];
+
+function durationOptions(current: number) {
+  return [...new Set([...DURATIONS, current])].sort((a, b) => a - b);
+}
 const TIMEZONES = [
   'America/Sao_Paulo',
   'America/Manaus',
@@ -176,7 +180,7 @@ function SettingsForm({ initial }: { initial: Settings }) {
                   })
                 }
               >
-                {DURATIONS.map((minutes) => (
+                {durationOptions(service.durationMinutes).map((minutes) => (
                   <option key={minutes} value={minutes}>
                     {minutes} min
                   </option>
