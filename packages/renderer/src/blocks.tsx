@@ -1,17 +1,119 @@
-import type { CSSProperties, ReactElement } from 'react';
-import { SOCIAL_LABELS, parseVideoUrl, type Block, type SocialNetwork } from '@moonlight/schemas';
+import { Fragment, type CSSProperties, type ReactElement } from 'react';
+import {
+  NAVBAR_VARIANTS,
+  SOCIAL_LABELS,
+  anchorTarget,
+  parseVideoUrl,
+  type Block,
+  type SocialNetwork,
+} from '@moonlight/schemas';
 import { BRAND_ICONS } from './brand-icons';
-import { luminance, readableTextColor, safeHref } from './utils';
+import { luminance, navHref, readableTextColor, safeHref } from './utils';
 
 type BlockOf<T extends Block['type']> = Extract<Block, { type: T }>;
 
-export type RenderOptions = { fallbackImage?: string; thumbnail?: boolean };
+export type RenderOptions = {
+  fallbackImage?: string;
+  thumbnail?: boolean;
+  anchorIds?: ReadonlySet<string>;
+};
+
+export function collectAnchorIds(blocks: Block[]): Set<string> {
+  const ids = new Set<string>();
+  for (const block of blocks) {
+    if (block.type !== 'header') continue;
+    const urls = [...(block.props.links ?? []).map((link) => link.url), block.props.ctaUrl];
+    for (const url of urls) {
+      const target = anchorTarget(url);
+      if (target) ids.add(target);
+    }
+  }
+  return ids;
+}
 
 function animate(block: Block): { 'data-animate'?: string } {
   return block.animation && block.animation !== 'none' ? { 'data-animate': block.animation } : {};
 }
 
+function navLinkProps(href: string, id: string) {
+  return href.startsWith('#') ? {} : { rel: 'noopener noreferrer', 'data-track-link': id };
+}
+
+function NavbarHeader({ block, options }: { block: BlockOf<'header'>; options: RenderOptions }) {
+  const logo = safeHref(block.props.avatarUrl);
+  const links = (block.props.links ?? []).flatMap((link) => {
+    const href = navHref(link.url);
+    return href ? [{ id: link.id, label: link.label, href }] : [];
+  });
+  const ctaHref = navHref(block.props.ctaUrl);
+  const cta =
+    block.props.ctaLabel && ctaHref
+      ? { id: `cta-${block.id}`, label: block.props.ctaLabel, href: ctaHref }
+      : null;
+  const hasMenu = links.length > 0 || cta !== null;
+
+  return (
+    <header
+      className="sbp-block sbp-header sbp-nav"
+      data-variant={block.variant}
+      data-sticky={block.props.sticky ? 'true' : undefined}
+      data-thumb={options.thumbnail ? 'true' : undefined}
+      {...animate(block)}
+    >
+      <div className="sbp-nav-brand">
+        {logo && <img className="sbp-nav-logo" src={logo} alt="" loading="lazy" />}
+        <h1 className="sbp-title sbp-nav-title">{block.props.title}</h1>
+      </div>
+      {links.length > 0 && (
+        <nav className="sbp-nav-links" aria-label="Menu principal">
+          <ul>
+            {links.map((link) => (
+              <li key={link.id}>
+                <a href={link.href} {...navLinkProps(link.href, link.id)}>
+                  {link.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
+      {cta && (
+        <div className="sbp-nav-cta">
+          <a className="sbp-btn" href={cta.href} {...navLinkProps(cta.href, cta.id)}>
+            {cta.label}
+          </a>
+        </div>
+      )}
+      {hasMenu && !options.thumbnail && (
+        <details className="sbp-nav-more">
+          <summary aria-label="Abrir menu">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+          </summary>
+          <div className="sbp-nav-sheet">
+            {links.map((link) => (
+              <a key={link.id} href={link.href} {...navLinkProps(link.href, link.id)}>
+                {link.label}
+              </a>
+            ))}
+            {cta && (
+              <a className="sbp-btn" href={cta.href} {...navLinkProps(cta.href, cta.id)}>
+                {cta.label}
+              </a>
+            )}
+          </div>
+        </details>
+      )}
+    </header>
+  );
+}
+
 function HeaderBlock({ block, options }: { block: BlockOf<'header'>; options: RenderOptions }) {
+  if ((NAVBAR_VARIANTS as readonly string[]).includes(block.variant)) {
+    return <NavbarHeader block={block} options={options} />;
+  }
+
   const avatar = safeHref(block.props.avatarUrl) ?? options.fallbackImage;
   const showAvatar =
     avatar && (block.variant === 'with-avatar' || block.variant === 'avatar-centered');
@@ -450,6 +552,17 @@ function DividerBlock({ block }: { block: BlockOf<'divider'> }) {
 }
 
 export function renderBlock(block: Block, options: RenderOptions = {}): ReactElement | null {
+  const element = renderBlockElement(block, options);
+  if (!element || !options.anchorIds?.has(block.id)) return element;
+  return (
+    <Fragment key={block.id}>
+      <span id={`b-${block.id}`} className="sbp-anchor" aria-hidden="true" />
+      {element}
+    </Fragment>
+  );
+}
+
+function renderBlockElement(block: Block, options: RenderOptions): ReactElement | null {
   switch (block.type) {
     case 'social':
       return <SocialBlock key={block.id} block={block} />;

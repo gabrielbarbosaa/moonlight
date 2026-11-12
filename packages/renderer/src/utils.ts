@@ -1,10 +1,15 @@
-import { safeUrlSchema, type FontId, type Theme } from '@moonlight/schemas';
+import { isAnchorUrl, safeUrlSchema, type FontId, type Theme } from '@moonlight/schemas';
 import type { CSSProperties } from 'react';
 
 export function safeHref(value: string | undefined): string | undefined {
   if (!value) return undefined;
   const result = safeUrlSchema.safeParse(value);
   return result.success ? new URL(result.data).href : undefined;
+}
+
+export function navHref(value: string | undefined): string | undefined {
+  if (isAnchorUrl(value)) return value;
+  return safeHref(value);
 }
 
 export function luminance(hex: string): number {

@@ -25,6 +25,39 @@ export const RENDERER_STYLES = `
 .sbp-header[data-variant="avatar-centered"] .sbp-avatar{width:104px;height:104px}
 .sbp-header[data-variant="banner"]{justify-content:center;text-align:center;padding:36px 24px;background:var(--sb-primary);color:var(--sb-on-primary);border-radius:var(--sb-radius)}
 
+.sbp-anchor{display:block;height:0;scroll-margin-top:96px}
+@media (prefers-reduced-motion:no-preference){html:has(.sbp){scroll-behavior:smooth}}
+.sbp-nav{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:14px;padding:12px 16px;border:1px solid color-mix(in srgb,var(--sb-text) 14%,transparent);border-radius:var(--sb-radius);background:color-mix(in srgb,var(--sb-bg-color) 86%,transparent)}
+.sbp-nav[data-sticky="true"]{position:sticky;top:12px;z-index:20;-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%)}
+.sbp-nav-brand{display:flex;align-items:center;gap:10px;min-width:0}
+.sbp-nav-logo{flex:none;width:34px;height:34px;border-radius:50%;object-fit:cover}
+.sbp-nav-title{overflow:hidden;font-size:1.15rem;line-height:1.2;font-weight:750;letter-spacing:-.01em;text-overflow:ellipsis;white-space:nowrap}
+.sbp-nav-links ul{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:2px;margin:0;padding:0;list-style:none}
+.sbp-nav-links a,.sbp-nav-sheet a:not(.sbp-btn){display:block;padding:8px 12px;font-size:.92rem;font-weight:600;text-decoration:none;border-radius:calc(var(--sb-btn-radius) * .7);opacity:.85;transition:background-color .15s ease,opacity .15s ease}
+.sbp-nav-links a:hover,.sbp-nav-sheet a:not(.sbp-btn):hover{opacity:1;background:color-mix(in srgb,var(--sb-text) 10%,transparent)}
+.sbp-nav-links a:focus-visible,.sbp-nav-more summary:focus-visible{outline:3px solid color-mix(in srgb,var(--sb-primary) 60%,transparent);outline-offset:2px}
+.sbp-nav-cta .sbp-btn,.sbp-nav-sheet .sbp-btn{padding:9px 18px;font-size:.9rem}
+.sbp-nav-more{display:none;position:relative;justify-self:end}
+.sbp-nav-more summary{display:grid;place-items:center;width:42px;height:42px;list-style:none;cursor:pointer;border:1px solid color-mix(in srgb,currentColor 24%,transparent);border-radius:calc(var(--sb-btn-radius) * .8)}
+.sbp-nav-more summary::-webkit-details-marker{display:none}
+.sbp-nav-more svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+.sbp-nav-sheet{position:absolute;top:calc(100% + 12px);right:0;z-index:30;display:flex;flex-direction:column;gap:4px;min-width:220px;padding:10px;color:var(--sb-text);background:color-mix(in srgb,var(--sb-bg-color) 94%,var(--sb-text));border:1px solid color-mix(in srgb,var(--sb-text) 16%,transparent);border-radius:var(--sb-radius);box-shadow:0 20px 40px -18px rgba(0,0,0,.55)}
+.sbp-nav-sheet .sbp-btn{width:100%;margin-top:6px}
+.sbp-nav[data-variant="navbar-center"]{grid-template-columns:1fr auto 1fr}
+.sbp-nav[data-variant="navbar-center"]{row-gap:6px}
+.sbp-nav[data-variant="navbar-center"] .sbp-nav-links{grid-column:1/-1;grid-row:2;justify-self:center}
+.sbp-nav[data-variant="navbar-center"] .sbp-nav-links ul{justify-content:center}
+.sbp-nav[data-variant="navbar-center"] .sbp-nav-brand{grid-column:2;grid-row:1}
+.sbp-nav[data-variant="navbar-center"] .sbp-nav-cta{grid-column:3;grid-row:1;justify-self:end}
+.sbp-nav[data-variant="navbar-pill"]{padding:8px 10px 8px 22px;border-radius:999px;box-shadow:0 18px 36px -22px rgba(0,0,0,.55)}
+.sbp-nav[data-variant="navbar-solid"]{color:var(--sb-on-primary);background:var(--sb-primary);border-color:transparent}
+.sbp-nav[data-variant="navbar-solid"] .sbp-nav-cta .sbp-btn{color:var(--sb-primary);background:var(--sb-on-primary);border-color:transparent}
+@container (max-width:560px){
+.sbp-nav:not([data-thumb]){grid-template-columns:minmax(0,1fr) auto}
+.sbp-nav:not([data-thumb]) .sbp-nav-links,.sbp-nav:not([data-thumb]) .sbp-nav-cta{display:none}
+.sbp-nav:not([data-thumb]) .sbp-nav-more{display:block;grid-column:2;grid-row:1}
+.sbp-nav[data-variant="navbar-center"]:not([data-thumb]) .sbp-nav-brand{grid-column:1}
+}
 .sbp-hero h2{font-size:clamp(1.65rem,9cqw,2.8rem);line-height:1.1;font-weight:800;letter-spacing:-.02em}
 .sbp-hero-sub{margin-top:12px;font-size:1.1rem;opacity:.8}
 .sbp-hero-cta{margin-top:20px}

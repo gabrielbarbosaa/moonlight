@@ -141,6 +141,7 @@ export function BlocksPanel({
                 <BlockForm
                   block={block}
                   theme={page.theme}
+                  blocks={blocks}
                   onChange={(next) => updateBlock(index, next)}
                 />
               </div>

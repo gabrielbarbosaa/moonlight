@@ -1,6 +1,9 @@
 'use client';
 
 import {
+  ANCHOR_PREFIX,
+  NAVBAR_VARIANTS,
+  anchorTarget,
   ANIMATION_LABELS,
   ANIMATION_TYPES,
   SOCIAL_LABELS,
@@ -11,6 +14,7 @@ import {
   type SocialNetwork,
   type Theme,
 } from '@moonlight/schemas';
+import { BLOCK_LABELS, describeBlock } from '@/lib/page-editor';
 import { ColorField, OptionRow, SelectField, TextField } from './fields';
 import { ImageField } from './image-field';
 import { ItemList } from './item-list';
@@ -23,23 +27,132 @@ type FormProps<T extends Block['type']> = {
   onChange: (block: BlockOf<T>) => void;
 };
 
-function HeaderForm({ block, onChange }: FormProps<'header'>) {
+type DestinationTarget = { id: string; label: string };
+
+function DestinationField({
+  label,
+  value,
+  onChange,
+  targets,
+}: {
+  label: string;
+  value: string | undefined;
+  onChange: (value: string) => void;
+  targets: DestinationTarget[];
+}) {
+  const anchor = anchorTarget(value);
+  const known = anchor !== null && targets.some((target) => target.id === anchor);
+  const options = [
+    { value: 'external', label: 'Link externo' },
+    ...targets.map((target) => ({
+      value: `${ANCHOR_PREFIX}${target.id}`,
+      label: `Seção: ${target.label}`,
+    })),
+    ...(anchor !== null && !known
+      ? [{ value: value ?? '', label: 'Seção removida (escolha outra)' }]
+      : []),
+  ];
+
+  return (
+    <>
+      <SelectField
+        label={label}
+        value={anchor !== null ? (value ?? 'external') : 'external'}
+        options={options}
+        onChange={(next) => onChange(next === 'external' ? '' : next)}
+      />
+      {anchor === null && (
+        <TextField
+          label="Endereço do link"
+          value={value}
+          placeholder="https://"
+          onChange={onChange}
+        />
+      )}
+    </>
+  );
+}
+
+function HeaderForm({
+  block,
+  onChange,
+  targets,
+}: FormProps<'header'> & { targets: DestinationTarget[] }) {
   const needsAvatar = block.variant === 'with-avatar' || block.variant === 'avatar-centered';
+  const isNavbar = (NAVBAR_VARIANTS as readonly string[]).includes(block.variant);
+  const set = (patch: Partial<BlockOf<'header'>['props']>) =>
+    onChange({ ...block, props: { ...block.props, ...patch } });
 
   return (
     <>
       <TextField
-        label="Título"
+        label={isNavbar ? 'Nome ou marca' : 'Título'}
         value={block.props.title}
         maxLength={80}
-        onChange={(title) => onChange({ ...block, props: { ...block.props, title } })}
+        onChange={(title) => set({ title })}
       />
-      {needsAvatar && (
+      {(needsAvatar || isNavbar) && (
         <ImageField
-          label="Foto"
+          label={isNavbar ? 'Logo (opcional)' : 'Foto'}
           value={block.props.avatarUrl}
-          onChange={(avatarUrl) => onChange({ ...block, props: { ...block.props, avatarUrl } })}
+          onChange={(avatarUrl) => set({ avatarUrl })}
         />
+      )}
+      {isNavbar && (
+        <>
+          <fieldset style={{ marginTop: 16 }}>
+            <legend>Itens do menu</legend>
+            <ItemList
+              items={block.props.links ?? []}
+              onChange={(links) => set({ links })}
+              itemName="Item"
+              max={8}
+              addLabel="Adicionar item"
+              createItem={(id) => ({ id, label: '', url: '' })}
+            >
+              {(item, update) => (
+                <>
+                  <TextField
+                    label="Texto"
+                    value={item.label}
+                    maxLength={40}
+                    onChange={(label) => update({ label })}
+                  />
+                  <DestinationField
+                    label="Leva para"
+                    value={item.url}
+                    targets={targets}
+                    onChange={(url) => update({ url })}
+                  />
+                </>
+              )}
+            </ItemList>
+          </fieldset>
+          <fieldset>
+            <legend>Botão de destaque</legend>
+            <TextField
+              label="Texto do botão"
+              value={block.props.ctaLabel}
+              maxLength={30}
+              hint="Deixe vazio para não mostrar o botão."
+              onChange={(ctaLabel) => set({ ctaLabel })}
+            />
+            <DestinationField
+              label="Botão leva para"
+              value={block.props.ctaUrl}
+              targets={targets}
+              onChange={(ctaUrl) => set({ ctaUrl })}
+            />
+          </fieldset>
+          <label className="switch" style={{ marginTop: 16 }}>
+            <input
+              type="checkbox"
+              checked={block.props.sticky === true}
+              onChange={(event) => set({ sticky: event.target.checked })}
+            />
+            Fixar no topo ao rolar a página
+          </label>
+        </>
       )}
     </>
   );
@@ -433,10 +546,12 @@ function FooterForm({ block, onChange }: FormProps<'footer'>) {
 function BlockFields({
   block,
   theme,
+  targets,
   onChange,
 }: {
   block: Block;
   theme: Theme;
+  targets: DestinationTarget[];
   onChange: (block: Block) => void;
 }) {
   const picker = (
@@ -453,7 +568,7 @@ function BlockFields({
       return (
         <>
           {picker}
-          <HeaderForm block={block} onChange={onChange} />
+          <HeaderForm block={block} onChange={onChange} targets={targets} />
         </>
       );
     case 'hero':
@@ -544,12 +659,21 @@ const ANIMATION_OPTIONS = ANIMATION_TYPES.map((type) => ({
 export function BlockForm({
   block,
   theme,
+  blocks,
   onChange,
 }: {
   block: Block;
   theme: Theme;
+  blocks: Block[];
   onChange: (block: Block) => void;
 }) {
+  const targets: DestinationTarget[] = blocks
+    .filter((other) => other.type !== 'header')
+    .map((other) => ({
+      id: other.id,
+      label: `${BLOCK_LABELS[other.type]} (${describeBlock(other).slice(0, 28)})`,
+    }));
+
   const setAnimation = (value: string) => {
     const { animation: _previous, ...rest } = block;
     onChange((value === 'none' ? rest : { ...rest, animation: value }) as Block);
@@ -557,7 +681,7 @@ export function BlockForm({
 
   return (
     <>
-      <BlockFields block={block} theme={theme} onChange={onChange} />
+      <BlockFields block={block} theme={theme} targets={targets} onChange={onChange} />
       <SelectField
         label="Animação ao rolar a página"
         value={block.animation ?? 'none'}

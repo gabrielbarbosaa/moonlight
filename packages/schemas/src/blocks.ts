@@ -12,7 +12,32 @@ export const HEADER_VARIANTS = [
   'with-avatar',
   'avatar-centered',
   'banner',
+  'navbar',
+  'navbar-center',
+  'navbar-pill',
+  'navbar-solid',
 ] as const;
+
+export const NAVBAR_VARIANTS = ['navbar', 'navbar-center', 'navbar-pill', 'navbar-solid'] as const;
+
+export const ANCHOR_PREFIX = '#b-';
+const ANCHOR_PATTERN = /^#b-[A-Za-z0-9_-]{1,64}$/;
+
+export function isAnchorUrl(value: string | undefined): value is string {
+  return typeof value === 'string' && ANCHOR_PATTERN.test(value);
+}
+
+export function anchorTarget(value: string | undefined): string | null {
+  return isAnchorUrl(value) ? value.slice(ANCHOR_PREFIX.length) : null;
+}
+
+export const navUrlSchema = z
+  .string()
+  .trim()
+  .max(2048)
+  .refine((value) => isAnchorUrl(value) || safeUrlSchema.safeParse(value).success, {
+    message: 'URL inválida',
+  });
 export const HERO_VARIANTS = [
   'text',
   'centered',
@@ -68,6 +93,19 @@ export const headerBlockSchema = z.object({
   props: z.object({
     title: z.string().trim().min(1).max(80),
     avatarUrl: safeUrlSchema.optional(),
+    links: z
+      .array(
+        z.object({
+          id: z.string().min(1),
+          label: z.string().trim().min(1).max(40),
+          url: navUrlSchema,
+        }),
+      )
+      .max(8)
+      .optional(),
+    ctaLabel: z.string().trim().max(30).optional(),
+    ctaUrl: navUrlSchema.optional(),
+    sticky: z.boolean().optional(),
   }),
 });
 

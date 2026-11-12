@@ -52,6 +52,10 @@ export const VARIANTS: Record<BlockType, { value: string; label: string }[]> = {
     { value: 'with-avatar', label: 'Com foto' },
     { value: 'avatar-centered', label: 'Foto centralizada' },
     { value: 'banner', label: 'Faixa colorida' },
+    { value: 'navbar', label: 'Barra de navegação' },
+    { value: 'navbar-center', label: 'Barra com marca ao centro' },
+    { value: 'navbar-pill', label: 'Barra flutuante' },
+    { value: 'navbar-solid', label: 'Barra colorida' },
   ],
   hero: [
     { value: 'text', label: 'Texto' },
@@ -124,7 +128,20 @@ export function sampleBlock(type: BlockType, variant: string): Block {
   const id = `sample-${type}-${variant}`;
   switch (type) {
     case 'header':
-      return { id, type, variant: variant as never, props: { title: 'Seu nome' } };
+      return {
+        id,
+        type,
+        variant: variant as never,
+        props: {
+          title: 'Seu nome',
+          links: [
+            { id: 'n1', label: 'Sobre', url: 'https://example.com/1' },
+            { id: 'n2', label: 'Serviços', url: 'https://example.com/2' },
+          ],
+          ctaLabel: 'Contato',
+          ctaUrl: 'https://example.com/3',
+        },
+      };
     case 'hero':
       return {
         id,

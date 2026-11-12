@@ -1,6 +1,6 @@
 import { pageSchema, type Block, type PageContent, type Theme } from '@moonlight/schemas';
 import type { ReactNode } from 'react';
-import { renderBlock } from './blocks';
+import { collectAnchorIds, renderBlock } from './blocks';
 import { RENDERER_STYLES } from './styles';
 import { themeStyle } from './utils';
 
@@ -19,12 +19,13 @@ export function PageRenderer({
   if (!parsed.success) return null;
 
   const { theme, blocks } = parsed.data;
+  const anchorIds = collectAnchorIds(blocks);
 
   return (
     <main className="sbp" data-fill={fill} data-btn={theme.buttonStyle} style={themeStyle(theme)}>
       <style>{RENDERER_STYLES}</style>
       <div className="sbp-wrap">
-        {blocks.map((block) => renderBlock(block))}
+        {blocks.map((block) => renderBlock(block, { anchorIds }))}
         {after && <div className="sbp-extra">{after}</div>}
       </div>
     </main>
