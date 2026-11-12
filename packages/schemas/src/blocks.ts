@@ -31,8 +31,34 @@ const linkItemSchema = z.object({
   url: safeUrlSchema,
 });
 
+export const ANIMATION_TYPES = [
+  'none',
+  'fade',
+  'fade-up',
+  'fade-down',
+  'fade-left',
+  'fade-right',
+  'zoom-in',
+  'zoom-out',
+  'flip-up',
+] as const;
+export type AnimationType = (typeof ANIMATION_TYPES)[number];
+
+export const ANIMATION_LABELS: Record<AnimationType, string> = {
+  none: 'Nenhuma',
+  fade: 'Surgir (fade)',
+  'fade-up': 'Surgir de baixo',
+  'fade-down': 'Surgir de cima',
+  'fade-left': 'Surgir da direita',
+  'fade-right': 'Surgir da esquerda',
+  'zoom-in': 'Zoom (de menor)',
+  'zoom-out': 'Zoom (de maior)',
+  'flip-up': 'Girar para cima',
+};
+
 const blockBase = {
   id: z.string().min(1),
+  animation: z.enum(ANIMATION_TYPES).optional(),
 };
 
 export const headerBlockSchema = z.object({

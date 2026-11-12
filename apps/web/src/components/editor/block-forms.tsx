@@ -1,6 +1,8 @@
 'use client';
 
 import {
+  ANIMATION_LABELS,
+  ANIMATION_TYPES,
   SOCIAL_LABELS,
   SOCIAL_NETWORKS,
   SOCIAL_PLACEHOLDERS,
@@ -428,7 +430,7 @@ function FooterForm({ block, onChange }: FormProps<'footer'>) {
   );
 }
 
-export function BlockForm({
+function BlockFields({
   block,
   theme,
   onChange,
@@ -532,4 +534,37 @@ export function BlockForm({
         </>
       );
   }
+}
+
+const ANIMATION_OPTIONS = ANIMATION_TYPES.map((type) => ({
+  value: type,
+  label: ANIMATION_LABELS[type],
+}));
+
+export function BlockForm({
+  block,
+  theme,
+  onChange,
+}: {
+  block: Block;
+  theme: Theme;
+  onChange: (block: Block) => void;
+}) {
+  const setAnimation = (value: string) => {
+    const { animation: _previous, ...rest } = block;
+    onChange((value === 'none' ? rest : { ...rest, animation: value }) as Block);
+  };
+
+  return (
+    <>
+      <BlockFields block={block} theme={theme} onChange={onChange} />
+      <SelectField
+        label="Animação ao rolar a página"
+        value={block.animation ?? 'none'}
+        options={ANIMATION_OPTIONS}
+        onChange={setAnimation}
+      />
+      <p className="hint">O bloco aparece com esse efeito quando entra na tela.</p>
+    </>
+  );
 }

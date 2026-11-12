@@ -2,6 +2,7 @@
 
 import { PageRenderer } from '@moonlight/renderer';
 import { CarouselControls } from '@/components/carousel-controls';
+import { ScrollAnimations } from '@/components/scroll-animations';
 import type { PageContent } from '@moonlight/schemas';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -198,6 +199,7 @@ export function PageEditor({ initial }: { initial: PageState }) {
             <div className="preview-frame" data-device={device}>
               <PageRenderer content={lastValid.current} fill="container" />
               <CarouselControls />
+              <ScrollAnimations />
             </div>
           </div>
         </section>

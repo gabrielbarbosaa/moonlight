@@ -7,13 +7,17 @@ type BlockOf<T extends Block['type']> = Extract<Block, { type: T }>;
 
 export type RenderOptions = { fallbackImage?: string; thumbnail?: boolean };
 
+function animate(block: Block): { 'data-animate'?: string } {
+  return block.animation && block.animation !== 'none' ? { 'data-animate': block.animation } : {};
+}
+
 function HeaderBlock({ block, options }: { block: BlockOf<'header'>; options: RenderOptions }) {
   const avatar = safeHref(block.props.avatarUrl) ?? options.fallbackImage;
   const showAvatar =
     avatar && (block.variant === 'with-avatar' || block.variant === 'avatar-centered');
 
   return (
-    <header className="sbp-block sbp-header" data-variant={block.variant}>
+    <header className="sbp-block sbp-header" data-variant={block.variant} {...animate(block)}>
       {showAvatar && <img className="sbp-avatar" src={avatar} alt="" loading="lazy" />}
       <h1 className="sbp-title">{block.props.title}</h1>
     </header>
@@ -54,6 +58,7 @@ function HeroBlock({ block, options }: { block: BlockOf<'hero'>; options: Render
       <section
         className="sbp-block sbp-hero"
         data-variant="full-bleed"
+        {...animate(block)}
         data-image={image ? 'true' : 'false'}
         style={style}
       >
@@ -64,7 +69,7 @@ function HeroBlock({ block, options }: { block: BlockOf<'hero'>; options: Render
 
   if ((block.variant === 'image-right' || block.variant === 'image-left') && image) {
     return (
-      <section className="sbp-block sbp-hero" data-variant={block.variant}>
+      <section className="sbp-block sbp-hero" data-variant={block.variant} {...animate(block)}>
         {text}
         <div className="sbp-hero-media">
           <img className="sbp-img" src={image} alt="" loading="lazy" />
@@ -76,7 +81,7 @@ function HeroBlock({ block, options }: { block: BlockOf<'hero'>; options: Render
   const variant =
     block.variant === 'image-right' || block.variant === 'image-left' ? 'text' : block.variant;
   return (
-    <section className="sbp-block sbp-hero" data-variant={variant}>
+    <section className="sbp-block sbp-hero" data-variant={variant} {...animate(block)}>
       {text}
     </section>
   );
@@ -91,7 +96,7 @@ function LinksBlock({ block }: { block: BlockOf<'links'> }) {
         : 'sbp-btn';
 
   return (
-    <nav className="sbp-block sbp-links" data-variant={block.variant}>
+    <nav className="sbp-block sbp-links" data-variant={block.variant} {...animate(block)}>
       {block.props.items.map((item) => {
         const href = safeHref(item.url);
         if (!href) return null;
@@ -114,13 +119,13 @@ function LinksBlock({ block }: { block: BlockOf<'links'> }) {
 function TextBlock({ block }: { block: BlockOf<'text'> }) {
   if (block.variant === 'quote') {
     return (
-      <blockquote className="sbp-block sbp-text" data-variant="quote">
+      <blockquote className="sbp-block sbp-text" data-variant="quote" {...animate(block)}>
         {block.props.content}
       </blockquote>
     );
   }
   return (
-    <p className="sbp-block sbp-text" data-variant={block.variant}>
+    <p className="sbp-block sbp-text" data-variant={block.variant} {...animate(block)}>
       {block.props.content}
     </p>
   );
@@ -129,7 +134,7 @@ function TextBlock({ block }: { block: BlockOf<'text'> }) {
 function FooterBlock({ block }: { block: BlockOf<'footer'> }) {
   if (!block.props.text) return null;
   return (
-    <footer className="sbp-block sbp-footer" data-variant={block.variant}>
+    <footer className="sbp-block sbp-footer" data-variant={block.variant} {...animate(block)}>
       {block.props.text}
     </footer>
   );
@@ -204,7 +209,12 @@ function SocialBlock({ block }: { block: BlockOf<'social'> }) {
   if (items.length === 0) return null;
 
   return (
-    <nav className="sbp-block sbp-social" data-variant={block.variant} aria-label="Redes sociais">
+    <nav
+      className="sbp-block sbp-social"
+      data-variant={block.variant}
+      aria-label="Redes sociais"
+      {...animate(block)}
+    >
       {items.map(({ item, href }) => {
         const name = item.label || SOCIAL_LABELS[item.network];
         return (
@@ -239,7 +249,7 @@ function LinklistBlock({ block, options }: { block: BlockOf<'linklist'>; options
   if (items.length === 0) return null;
 
   return (
-    <section className="sbp-block sbp-linklist">
+    <section className="sbp-block sbp-linklist" {...animate(block)}>
       <SectionTitle title={block.props.title} />
       <nav className="sbp-ll" data-variant={block.variant}>
         {items.map(({ item, href }, index) => {
@@ -276,7 +286,7 @@ function CarouselBlock({ block, options }: { block: BlockOf<'carousel'>; options
   if (slides.length === 0) return null;
 
   return (
-    <section className="sbp-block sbp-carousel" data-variant={block.variant}>
+    <section className="sbp-block sbp-carousel" data-variant={block.variant} {...animate(block)}>
       <SectionTitle title={block.props.title} />
       <div className="sbp-carousel-frame">
         <ul
@@ -352,6 +362,7 @@ function GalleryBlock({ block, options }: { block: BlockOf<'gallery'>; options: 
     <section
       className="sbp-block sbp-gallery"
       data-variant={variant}
+      {...animate(block)}
       data-single={tiles.length === 1 ? 'true' : undefined}
     >
       <SectionTitle title={block.props.title} />
@@ -379,7 +390,7 @@ function FaqBlock({ block }: { block: BlockOf<'faq'> }) {
   if (block.props.items.length === 0) return null;
 
   return (
-    <section className="sbp-block sbp-faq" data-variant={block.variant}>
+    <section className="sbp-block sbp-faq" data-variant={block.variant} {...animate(block)}>
       <SectionTitle title={block.props.title} />
       {block.props.items.map((item) =>
         block.variant === 'plain' ? (
@@ -404,7 +415,7 @@ function VideoBlock({ block, options }: { block: BlockOf<'video'>; options: Rend
   const title = block.props.title || 'Vídeo';
 
   return (
-    <section className="sbp-block sbp-video" data-variant={block.variant}>
+    <section className="sbp-block sbp-video" data-variant={block.variant} {...animate(block)}>
       <div className="sbp-video-frame" data-thumbnail={options.thumbnail ? 'true' : undefined}>
         {options.thumbnail ? (
           <span className="sbp-video-play" aria-hidden="true" />
@@ -428,7 +439,14 @@ function VideoBlock({ block, options }: { block: BlockOf<'video'>; options: Rend
 }
 
 function DividerBlock({ block }: { block: BlockOf<'divider'> }) {
-  return <div className="sbp-block sbp-divider" data-variant={block.variant} aria-hidden="true" />;
+  return (
+    <div
+      className="sbp-block sbp-divider"
+      data-variant={block.variant}
+      aria-hidden="true"
+      {...animate(block)}
+    />
+  );
 }
 
 export function renderBlock(block: Block, options: RenderOptions = {}): ReactElement | null {

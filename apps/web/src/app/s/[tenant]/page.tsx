@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation';
 import { AgendaLink } from '@/components/agenda-link';
 import { ReportLink } from '@/components/report-link';
 import { CarouselControls } from '@/components/carousel-controls';
+import { SCROLL_ANIMATION_BOOT_SCRIPT, ScrollAnimations } from '@/components/scroll-animations';
 import { TrackView } from '@/components/track-view';
 
 const API_URL = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
@@ -45,8 +46,13 @@ export default async function TenantPage({ params }: { params: Promise<{ tenant:
     );
   }
 
+  const animated = tenant.page.blocks.some(
+    (block) => block.animation && block.animation !== 'none',
+  );
+
   return (
     <>
+      {animated && <script dangerouslySetInnerHTML={{ __html: SCROLL_ANIMATION_BOOT_SCRIPT }} />}
       <PageRenderer
         content={tenant.page}
         after={
@@ -58,6 +64,7 @@ export default async function TenantPage({ params }: { params: Promise<{ tenant:
       />
       <TrackView slug={tenant.slug} />
       <CarouselControls />
+      {animated && <ScrollAnimations />}
     </>
   );
 }
