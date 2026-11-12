@@ -1,58 +1,115 @@
 'use client';
 
 import type { BookingConfirmation, BookingSlot, PublicBookingInfo } from '@moonlight/schemas';
+import { MAX_EXTRA_SERVICES } from '@moonlight/schemas';
+import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Icon } from '@/components/icons';
+import { useTenantBase } from '@/lib/use-tenant-base';
+import {
+  API_URL,
+  addDays,
+  dateTimeLabel,
+  dayKey,
+  dayLabel,
+  dayNumber,
+  durationLabel,
+  monthShort,
+  noticeText,
+  request,
+  timeLabel,
+  todayIn,
+  weekdayShort,
+} from '@/lib/booking-public';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
 const DAYS_PER_PAGE = 7;
 
-function todayIn(timeZone: string) {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(new Date());
+function Steps({ current }: { current: 1 | 2 | 3 }) {
+  const items = ['Serviços', 'Data e horário', 'Seus dados'];
+  return (
+    <ol className="bk-steps" aria-label="Etapas">
+      {items.map((label, index) => {
+        const number = index + 1;
+        const state = number < current ? 'done' : number === current ? 'active' : 'todo';
+        return (
+          <li key={label} data-state={state} aria-current={state === 'active' ? 'step' : undefined}>
+            <span className="bk-dot">{state === 'done' ? <Icon name="check" /> : number}</span>
+            {label}
+          </li>
+        );
+      })}
+    </ol>
+  );
 }
 
-function addDays(date: string, days: number) {
-  const [year, month, day] = date.split('-').map(Number);
-  return new Date(Date.UTC(year, month - 1, day) + days * 86_400_000).toISOString().slice(0, 10);
-}
+function LookupForm({ slug }: { slug: string }) {
+  const [email, setEmail] = useState('');
+  const [state, setState] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
+  const [message, setMessage] = useState<string | null>(null);
 
-function dayKey(iso: string, timeZone: string) {
-  return new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date(iso));
-}
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    setState('sending');
+    const result = await request(`/booking/public/${encodeURIComponent(slug)}/lookup`, {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+    if (result.status === 202 || result.status === 200) setState('sent');
+    else {
+      setState('error');
+      setMessage(
+        result.status === 429
+          ? 'Muitas tentativas. Tente de novo mais tarde.'
+          : 'Confira o e-mail e tente novamente.',
+      );
+    }
+  };
 
-function dayLabel(iso: string, timeZone: string) {
-  const label = new Date(iso).toLocaleDateString('pt-BR', {
-    timeZone,
-    weekday: 'long',
-    day: '2-digit',
-    month: 'long',
-  });
-  return label.charAt(0).toUpperCase() + label.slice(1);
-}
-
-function timeLabel(iso: string, timeZone: string) {
-  return new Date(iso).toLocaleTimeString('pt-BR', {
-    timeZone,
-    hour: '2-digit',
-    minute: '2-digit',
-  });
+  return (
+    <section className="card bk-lookup">
+      <h2>Já tem uma reserva?</h2>
+      <p className="muted">
+        Informe o e-mail usado na reserva e enviamos o link para ver, cancelar ou adicionar
+        serviços.
+      </p>
+      {state === 'sent' ? (
+        <p role="status">
+          Se houver reservas futuras nesse e-mail, enviamos os links agora. Confira a caixa de
+          entrada.
+        </p>
+      ) : (
+        <form onSubmit={submit} className="row" style={{ alignItems: 'flex-end' }}>
+          <label className="field" style={{ flex: 1, minWidth: 220, margin: 0 }}>
+            Seu e-mail
+            <input
+              required
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          </label>
+          <button type="submit" disabled={state === 'sending'}>
+            {state === 'sending' ? 'Enviando...' : 'Receber link'}
+          </button>
+        </form>
+      )}
+      {state === 'error' && message && <p className="error-text">{message}</p>}
+    </section>
+  );
 }
 
 export default function AgendaPage() {
   const params = useParams<{ tenant: string }>();
   const slug = params.tenant;
+  const tenantBase = useTenantBase(slug);
 
   const [info, setInfo] = useState<PublicBookingInfo | null>(null);
   const [loadError, setLoadError] = useState<'notfound' | 'error' | null>(null);
-  const [serviceId, setServiceId] = useState('');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [offset, setOffset] = useState(0);
   const [slots, setSlots] = useState<BookingSlot[] | null>(null);
+  const [day, setDay] = useState<string | null>(null);
   const [selected, setSelected] = useState<BookingSlot | null>(null);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -63,37 +120,43 @@ export default function AgendaPage() {
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`${API_URL}/booking/public/${encodeURIComponent(slug)}`)
-      .then(async (response) => {
-        if (cancelled) return;
-        if (response.status === 404 || response.status === 400) return setLoadError('notfound');
-        if (!response.ok) return setLoadError('error');
-        const data: PublicBookingInfo = await response.json();
-        setInfo(data);
-        setServiceId(data.services[0]?.id ?? '');
-      })
-      .catch(() => !cancelled && setLoadError('error'));
+    request<PublicBookingInfo>(`/booking/public/${encodeURIComponent(slug)}`).then((result) => {
+      if (cancelled) return;
+      if (result.status === 404 || result.status === 400) return setLoadError('notfound');
+      if (!result.data) return setLoadError('error');
+      setInfo(result.data);
+      setSelectedIds(result.data.services[0] ? [result.data.services[0].id] : []);
+    });
     return () => {
       cancelled = true;
     };
   }, [slug]);
 
+  const chosen = useMemo(
+    () =>
+      selectedIds
+        .map((id) => info?.services.find((item) => item.id === id))
+        .filter((item): item is NonNullable<typeof item> => Boolean(item)),
+    [selectedIds, info],
+  );
+  const totalMinutes = chosen.reduce((sum, item) => sum + item.durationMinutes, 0);
+
   const loadSlots = useCallback(async () => {
-    if (!info || !serviceId) return;
+    if (!info || selectedIds.length === 0) return;
     setSlots(null);
+    const [primary, ...extras] = selectedIds;
     const from = addDays(todayIn(info.timezone), offset);
-    try {
-      const response = await fetch(
-        `${API_URL}/booking/public/${encodeURIComponent(slug)}/slots?serviceId=${serviceId}&from=${from}&days=${DAYS_PER_PAGE}`,
-      );
-      setSlots(response.ok ? await response.json() : []);
-    } catch {
-      setSlots([]);
-    }
-  }, [info, serviceId, offset, slug]);
+    const query = new URLSearchParams({ serviceId: primary, from, days: String(DAYS_PER_PAGE) });
+    if (extras.length > 0) query.set('extraIds', extras.join(','));
+    const result = await request<BookingSlot[]>(
+      `/booking/public/${encodeURIComponent(slug)}/slots?${query.toString()}`,
+    );
+    setSlots(result.data ?? []);
+  }, [info, selectedIds, offset, slug]);
 
   useEffect(() => {
     setSelected(null);
+    setDay(null);
     loadSlots();
   }, [loadSlots]);
 
@@ -107,40 +170,60 @@ export default function AgendaPage() {
     return groups;
   }, [slots, info]);
 
+  const visibleDays = useMemo(() => {
+    if (!info) return [];
+    const start = addDays(todayIn(info.timezone), offset);
+    return Array.from({ length: DAYS_PER_PAGE }, (_, index) => addDays(start, index));
+  }, [info, offset]);
+
+  useEffect(() => {
+    if (day || grouped.size === 0) return;
+    setDay([...grouped.keys()][0]);
+  }, [grouped, day]);
+
+  const toggleService = (id: string) => {
+    setOffset(0);
+    setFormError(null);
+    setSelectedIds((current) => {
+      if (current.includes(id))
+        return current.length === 1 ? current : current.filter((x) => x !== id);
+      if (current.length >= MAX_EXTRA_SERVICES + 1) return current;
+      return [...current, id];
+    });
+  };
+
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     if (!selected) return;
     setSending(true);
     setFormError(null);
-    try {
-      const response = await fetch(`${API_URL}/booking/public/${encodeURIComponent(slug)}/book`, {
+    const [primary, ...extras] = selectedIds;
+    const result = await request<BookingConfirmation>(
+      `/booking/public/${encodeURIComponent(slug)}/book`,
+      {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
-          serviceId,
+          serviceId: primary,
+          extraServiceIds: extras,
           startsAt: selected.startsAt,
           name,
           email,
           notes: notes.trim() || undefined,
         }),
-      });
-      if (response.ok) {
-        setConfirmation(await response.json());
-      } else if (response.status === 409) {
-        setFormError('Esse horário acabou de ser reservado. Escolha outro.');
-        setSelected(null);
-        loadSlots();
-      } else if (response.status === 429) {
-        setFormError('Muitas tentativas. Tente novamente mais tarde.');
-      } else if (response.status === 400) {
-        setFormError('Confira seu nome e e-mail.');
-      } else {
-        setFormError('Não foi possível reservar. Tente novamente.');
-      }
-    } catch {
-      setFormError('Não foi possível falar com o servidor.');
-    } finally {
-      setSending(false);
+      },
+    );
+    setSending(false);
+    if (result.data) return setConfirmation(result.data);
+    if (result.status === 409) {
+      setFormError('Esse horário acabou de ser reservado. Escolha outro.');
+      setSelected(null);
+      loadSlots();
+    } else if (result.status === 429) {
+      setFormError('Muitas tentativas. Tente novamente mais tarde.');
+    } else if (result.status === 400) {
+      setFormError('Confira seu nome e e-mail.');
+    } else {
+      setFormError(result.message ?? 'Não foi possível reservar. Tente novamente.');
     }
   };
 
@@ -174,70 +257,98 @@ export default function AgendaPage() {
   }
 
   if (confirmation) {
+    const manageHref = `${tenantBase}/agenda/reserva/${confirmation.manageToken}`;
     return (
       <main className="page page-narrow">
-        <div className="card" style={{ textAlign: 'center', padding: '36px 24px' }}>
-          <span
-            className="icon-tile"
-            style={{
-              width: 56,
-              height: 56,
-              color: 'var(--success)',
-              background: 'var(--success-soft)',
-              borderRadius: 999,
-            }}
-          >
-            <Icon name="check" style={{ width: 26, height: 26 }} />
+        <div className="card bk-success">
+          <span className="bk-success-icon">
+            <Icon name="check" />
           </span>
-          <h1 style={{ margin: '16px 0 8px' }}>Reserva confirmada</h1>
-          <p style={{ margin: 0 }}>
-            {confirmation.serviceName} em{' '}
-            <strong>
-              {dayLabel(confirmation.startsAt, info.timezone)} às{' '}
-              {timeLabel(confirmation.startsAt, info.timezone)}
-            </strong>
-            .
-          </p>
-          <p className="muted" style={{ margin: '8px 0 0' }}>
-            Enviamos a confirmação para o seu e-mail.
+          <h1>Reserva confirmada</h1>
+          <p className="bk-when">{dateTimeLabel(confirmation.startsAt, info.timezone)}</p>
+          <ul className="bk-lines">
+            {confirmation.services.map((service) => (
+              <li key={service.name}>
+                <span>{service.name}</span>
+                <span className="muted">{durationLabel(service.durationMinutes)}</span>
+              </li>
+            ))}
+            {confirmation.services.length > 1 && (
+              <li className="bk-total">
+                <span>Duração total</span>
+                <span>{durationLabel(confirmation.totalMinutes)}</span>
+              </li>
+            )}
+          </ul>
+          <div className="bk-actions">
+            <Link href={manageHref} className="btn btn-primary btn-lg">
+              Ver ou alterar minha reserva
+            </Link>
+            <a
+              className="btn btn-lg"
+              href={`${API_URL}/booking/manage/${confirmation.manageToken}/calendar.ics`}
+            >
+              <Icon name="calendar" />
+              Adicionar ao calendário
+            </a>
+          </div>
+          <p className="muted" style={{ margin: '18px 0 0', fontSize: '0.9rem' }}>
+            Enviamos a confirmação, com o link da reserva, para o seu e-mail. Guarde esse link: é
+            por ele que você cancela ou adiciona serviços.
           </p>
         </div>
       </main>
     );
   }
 
-  const service = info.services.find((item) => item.id === serviceId);
+  const step: 1 | 2 | 3 = selected ? 3 : 2;
+  const daySlots = day ? (grouped.get(day) ?? []) : [];
 
   return (
     <main className="page page-narrow">
       <div className="page-head">
         <div>
           <h1>Agendar com {info.name}</h1>
-          <p>Escolha o serviço e um horário livre.</p>
+          <p>Escolha o que você precisa e um horário livre.</p>
         </div>
       </div>
 
-      <div className="card">
-        <label className="field" style={{ marginTop: 0 }}>
-          Serviço
-          <select
-            value={serviceId}
-            onChange={(event) => {
-              setServiceId(event.target.value);
-              setOffset(0);
-            }}
-          >
-            {info.services.map((item) => (
-              <option key={item.id} value={item.id}>
-                {item.name} ({item.durationMinutes} min)
-              </option>
-            ))}
-          </select>
-        </label>
-        <p className="hint">Horários no fuso {info.timezone}.</p>
+      <Steps current={step} />
 
-        <div className="row" style={{ justifyContent: 'space-between', margin: '16px 0 4px' }}>
-          <strong>Horários disponíveis</strong>
+      <section className="card">
+        <h2>1. Serviços</h2>
+        <p className="hint" style={{ marginTop: 0 }}>
+          Você pode combinar até {MAX_EXTRA_SERVICES + 1} serviços na mesma visita.
+        </p>
+        <div className="bk-service-list">
+          {info.services.map((item) => {
+            const active = selectedIds.includes(item.id);
+            const blocked = !active && selectedIds.length >= MAX_EXTRA_SERVICES + 1;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className="bk-service"
+                aria-pressed={active}
+                disabled={blocked}
+                onClick={() => toggleService(item.id)}
+              >
+                <span className="bk-check">{active && <Icon name="check" />}</span>
+                <span className="bk-service-name">{item.name}</span>
+                <span className="muted">{durationLabel(item.durationMinutes)}</span>
+              </button>
+            );
+          })}
+        </div>
+        <p className="bk-total-line">
+          <strong>{chosen.length === 1 ? '1 serviço' : `${chosen.length} serviços`}</strong>
+          <span className="muted"> · {durationLabel(totalMinutes)} no total</span>
+        </p>
+      </section>
+
+      <section className="card" style={{ marginTop: 16 }}>
+        <div className="row" style={{ justifyContent: 'space-between' }}>
+          <h2 style={{ margin: 0 }}>2. Data e horário</h2>
           <div className="segmented" role="group" aria-label="Navegar pelos dias">
             <button
               type="button"
@@ -257,19 +368,47 @@ export default function AgendaPage() {
             </button>
           </div>
         </div>
+        <p className="hint">Horários no fuso {info.timezone}.</p>
+
+        <div className="bk-days">
+          {visibleDays.map((date) => {
+            const count = grouped.get(date)?.length ?? 0;
+            return (
+              <button
+                key={date}
+                type="button"
+                className="bk-day"
+                aria-pressed={day === date}
+                disabled={slots === null || count === 0}
+                onClick={() => {
+                  setDay(date);
+                  setSelected(null);
+                }}
+              >
+                <small>{weekdayShort(date)}</small>
+                <strong>{dayNumber(date)}</strong>
+                <small>{monthShort(date)}</small>
+                <span className="bk-count">
+                  {slots === null ? '·' : count === 0 ? 'cheio' : `${count}`}
+                </span>
+              </button>
+            );
+          })}
+        </div>
 
         {slots === null && <p className="muted">Carregando horários...</p>}
         {slots !== null && grouped.size === 0 && (
-          <div className="empty" style={{ marginTop: 8 }}>
-            Nenhum horário livre neste período.
+          <div className="empty" style={{ marginTop: 12 }}>
+            Nenhum horário livre neste período para essa combinação. Tente outros dias ou menos
+            serviços.
           </div>
         )}
-        {[...grouped.entries()].map(([key, daySlots]) => (
-          <section key={key} style={{ marginTop: 14 }}>
-            <h2 style={{ fontSize: '0.95rem', margin: '0 0 6px' }}>
+        {daySlots.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <strong style={{ fontSize: '0.95rem' }}>
               {dayLabel(daySlots[0].startsAt, info.timezone)}
-            </h2>
-            <div className="option-row" style={{ marginTop: 0 }}>
+            </strong>
+            <div className="bk-times">
               {daySlots.map((slot) => (
                 <button
                   key={slot.startsAt}
@@ -281,18 +420,20 @@ export default function AgendaPage() {
                 </button>
               ))}
             </div>
-          </section>
-        ))}
-      </div>
+          </div>
+        )}
+      </section>
 
       {selected && (
         <form onSubmit={submit} className="card" style={{ marginTop: 16 }}>
-          <p style={{ margin: 0 }}>
-            <strong>
-              {service?.name} · {dayLabel(selected.startsAt, info.timezone)} às{' '}
-              {timeLabel(selected.startsAt, info.timezone)}
-            </strong>
-          </p>
+          <h2>3. Seus dados</h2>
+          <div className="bk-summary">
+            <strong>{dayLabel(selected.startsAt, info.timezone)}</strong>
+            <span>
+              {timeLabel(selected.startsAt, info.timezone)} às{' '}
+              {timeLabel(selected.endsAt, info.timezone)} · {chosen.map((s) => s.name).join(' + ')}
+            </span>
+          </div>
           <label className="field">
             Seu nome
             <input
@@ -310,6 +451,9 @@ export default function AgendaPage() {
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
+            <span className="hint" style={{ display: 'block' }}>
+              Enviamos a confirmação e o link para gerenciar a reserva.
+            </span>
           </label>
           <label className="field">
             Observações (opcional)
@@ -320,11 +464,14 @@ export default function AgendaPage() {
               onChange={(event) => setNotes(event.target.value)}
             />
           </label>
+          <p className="hint">
+            Você poderá cancelar pelo link {noticeText(info.cancelNoticeHours)} do horário.
+          </p>
           <button
             type="submit"
             className="btn-lg"
             disabled={sending}
-            style={{ width: '100%', marginTop: 18 }}
+            style={{ width: '100%', marginTop: 8 }}
           >
             {sending ? 'Reservando...' : 'Confirmar reserva'}
           </button>
@@ -336,6 +483,8 @@ export default function AgendaPage() {
           {formError}
         </p>
       )}
+
+      <LookupForm slug={slug} />
     </main>
   );
 }

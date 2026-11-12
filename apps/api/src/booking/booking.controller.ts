@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Header,
   HttpCode,
   Param,
   Post,
@@ -16,10 +18,14 @@ import { AuthenticatedRequest, SessionGuard } from '../auth/session.guard';
 import { SESSION_COOKIE } from '../auth/session.service';
 import { SlugParamDto } from '../tenants/tenants.dto';
 import {
+  AddServiceDto,
   BookingIdParamDto,
   BookingSettingsDto,
   BookingsListQueryDto,
   CreateBookingDto,
+  LookupBookingDto,
+  ManageExtraParamDto,
+  ManageTokenParamDto,
   SlotsQueryDto,
 } from './booking.dto';
 import { BookingService } from './booking.service';
@@ -75,8 +81,55 @@ export class BookingController {
   }
 
   @Post('public/:slug/book')
-  @ApiOperation({ summary: 'Reserva um horário' })
+  @ApiOperation({ summary: 'Reserva um horário (um ou mais serviços)' })
   book(@Param() params: SlugParamDto, @Body() body: CreateBookingDto, @Req() req: Request) {
     return this.booking.book(params.slug, body, req.ip ?? 'unknown');
+  }
+
+  @Post('public/:slug/lookup')
+  @HttpCode(202)
+  @ApiOperation({
+    summary: 'Reenvia por e-mail os links das próximas reservas (resposta sempre neutra)',
+  })
+  async lookup(@Param() params: SlugParamDto, @Body() body: LookupBookingDto, @Req() req: Request) {
+    await this.booking.lookup(params.slug, body, req.ip ?? 'unknown');
+  }
+
+  @Get('manage/:token')
+  @ApiOperation({ summary: 'Detalhes da reserva para o cliente (link privado)' })
+  managed(@Param() params: ManageTokenParamDto, @Req() req: Request) {
+    return this.booking.getManaged(params.token, req.ip ?? 'unknown');
+  }
+
+  @Post('manage/:token/cancel')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Cliente cancela a própria reserva, dentro do prazo' })
+  cancelManaged(@Param() params: ManageTokenParamDto, @Req() req: Request) {
+    return this.booking.cancelManaged(params.token, req.ip ?? 'unknown');
+  }
+
+  @Post('manage/:token/services')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Cliente adiciona um serviço, se houver horário livre logo depois' })
+  addService(
+    @Param() params: ManageTokenParamDto,
+    @Body() body: AddServiceDto,
+    @Req() req: Request,
+  ) {
+    return this.booking.addService(params.token, body, req.ip ?? 'unknown');
+  }
+
+  @Delete('manage/:token/services/:extraId')
+  @ApiOperation({ summary: 'Cliente remove um serviço adicional, dentro do prazo' })
+  removeExtra(@Param() params: ManageExtraParamDto, @Req() req: Request) {
+    return this.booking.removeExtra(params.token, params.extraId, req.ip ?? 'unknown');
+  }
+
+  @Get('manage/:token/calendar.ics')
+  @Header('Content-Type', 'text/calendar; charset=utf-8')
+  @Header('Content-Disposition', 'attachment; filename="reserva.ics"')
+  @ApiOperation({ summary: 'Arquivo de calendário (.ics) da reserva' })
+  calendar(@Param() params: ManageTokenParamDto, @Req() req: Request) {
+    return this.booking.calendarFile(params.token, req.ip ?? 'unknown');
   }
 }

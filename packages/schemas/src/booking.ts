@@ -47,10 +47,14 @@ export const availabilityRuleSchema = z
     path: ['endMinute'],
   });
 
+export const CANCEL_NOTICE_OPTIONS = [0, 1, 2, 4, 12, 24, 48] as const;
+export const MAX_EXTRA_SERVICES = 3;
+
 export const bookingSettingsSchema = z
   .object({
     enabled: z.boolean(),
     timezone: timezoneSchema,
+    cancelNoticeHours: z.number().int().min(0).max(168).default(2),
     services: z.array(bookingServiceInputSchema).max(10),
     rules: z.array(availabilityRuleSchema).max(28),
   })
@@ -79,6 +83,11 @@ export type BookingSettingsInput = z.infer<typeof bookingSettingsSchema>;
 
 export const slotsQuerySchema = z.object({
   serviceId: z.string().uuid(),
+  extraIds: z
+    .string()
+    .optional()
+    .transform((value) => (value ? value.split(',').filter(Boolean) : []))
+    .pipe(z.array(z.string().uuid()).max(MAX_EXTRA_SERVICES)),
   from: dateStringSchema,
   days: z.coerce.number().int().min(1).max(14).default(7),
 });
@@ -86,6 +95,7 @@ export type SlotsQuery = z.infer<typeof slotsQuerySchema>;
 
 export const createBookingSchema = z.object({
   serviceId: z.string().uuid(),
+  extraServiceIds: z.array(z.string().uuid()).max(MAX_EXTRA_SERVICES).default([]),
   startsAt: z.string().datetime(),
   name: z.string().trim().min(1, 'Informe seu nome').max(80),
   email: emailSchema,
@@ -93,10 +103,54 @@ export const createBookingSchema = z.object({
 });
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;
 
+export const manageTokenSchema = z.string().regex(/^[A-Za-z0-9_-]{43}$/);
+export const manageTokenParamSchema = z.object({ token: manageTokenSchema });
+export const manageExtraParamSchema = z.object({
+  token: manageTokenSchema,
+  extraId: z.string().uuid(),
+});
+export const addServiceSchema = z.object({ serviceId: z.string().uuid() });
+export type AddServiceInput = z.infer<typeof addServiceSchema>;
+export const lookupBookingSchema = z.object({ email: emailSchema });
+export type LookupBookingInput = z.infer<typeof lookupBookingSchema>;
+
+export const BOOKINGS_PAGE_SIZES = [10, 25, 50] as const;
+
+const optionalDate = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/)
+  .optional()
+  .catch(undefined);
+
 export const bookingsListQuerySchema = z.object({
-  scope: z.enum(['upcoming', 'past']).default('upcoming'),
+  scope: z.enum(['upcoming', 'past', 'all']).default('upcoming'),
+  status: z.enum(['all', 'CONFIRMED', 'CANCELLED']).default('all'),
+  q: z
+    .string()
+    .trim()
+    .max(100)
+    .optional()
+    .transform((value) => value || undefined),
+  serviceId: z.string().uuid().optional().catch(undefined),
+  from: optionalDate,
+  to: optionalDate,
+  page: z.coerce.number().int().min(1).max(10000).catch(1).default(1),
+  pageSize: z.coerce
+    .number()
+    .int()
+    .refine((n) => (BOOKINGS_PAGE_SIZES as readonly number[]).includes(n))
+    .catch(10)
+    .default(10),
 });
 export type BookingsListQuery = z.infer<typeof bookingsListQuerySchema>;
+
+export type OwnerBookingsPage = {
+  items: OwnerBooking[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+};
 
 export const idParamSchema = z.object({ id: z.string().uuid() });
 
@@ -105,6 +159,7 @@ export type BookingServiceDto = { id: string; name: string; durationMinutes: num
 export type BookingSettings = {
   enabled: boolean;
   timezone: string;
+  cancelNoticeHours: number;
   services: BookingServiceDto[];
   rules: { weekday: number; startMinute: number; endMinute: number }[];
 };
@@ -115,6 +170,7 @@ export type PublicBookingInfo = {
   timezone: string;
   services: BookingServiceDto[];
   maxDaysAhead: number;
+  cancelNoticeHours: number;
 };
 
 export type BookingSlot = { startsAt: string; endsAt: string };
@@ -122,12 +178,15 @@ export type BookingSlot = { startsAt: string; endsAt: string };
 export type OwnerBooking = {
   id: string;
   serviceName: string;
+  services: { name: string; durationMinutes: number }[];
+  totalMinutes: number;
   startsAt: string;
   endsAt: string;
   customerName: string;
   customerEmail: string;
   notes: string | null;
   status: 'CONFIRMED' | 'CANCELLED';
+  cancelledBy: 'CUSTOMER' | 'OWNER' | null;
 };
 
 export type BookingConfirmation = {
@@ -135,4 +194,40 @@ export type BookingConfirmation = {
   startsAt: string;
   endsAt: string;
   serviceName: string;
+  services: { name: string; durationMinutes: number }[];
+  totalMinutes: number;
+  manageToken: string;
+};
+
+export type ManagedBookingService = {
+  id: string;
+  name: string;
+  durationMinutes: number;
+  extraId: string | null;
+};
+
+export type AddableService = {
+  id: string;
+  name: string;
+  durationMinutes: number;
+  available: boolean;
+};
+
+export type ManagedBooking = {
+  id: string;
+  status: 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+  cancelledBy: 'CUSTOMER' | 'OWNER' | null;
+  tenant: { slug: string; name: string; timezone: string };
+  customerName: string;
+  notes: string | null;
+  startsAt: string;
+  endsAt: string;
+  totalMinutes: number;
+  services: ManagedBookingService[];
+  cancelNoticeHours: number;
+  cancelDeadline: string;
+  canCancel: boolean;
+  canAddServices: boolean;
+  canRemoveServices: boolean;
+  addable: AddableService[];
 };

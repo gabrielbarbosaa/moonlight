@@ -63,6 +63,28 @@ export function isRealDate(date: string): boolean {
   );
 }
 
+export function localMinuteOfDay(instant: Date, timeZone: string): number {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hourCycle: 'h23',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).formatToParts(instant);
+  const value = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? 0);
+  return value('hour') * 60 + value('minute');
+}
+
+export function weekdayInZone(instant: Date, timeZone: string): number {
+  return weekdayOf(localDate(instant, timeZone));
+}
+
+export function toIcsDate(instant: Date): string {
+  return instant
+    .toISOString()
+    .replace(/[-:]/g, '')
+    .replace(/\.\d{3}Z$/, 'Z');
+}
+
 export function formatInZone(instant: Date, timeZone: string): string {
   return instant.toLocaleString('pt-BR', { timeZone, dateStyle: 'full', timeStyle: 'short' });
 }

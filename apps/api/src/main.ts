@@ -8,7 +8,7 @@ import { AppModule } from './app.module';
 import { SESSION_COOKIE } from './auth/session.service';
 
 const PUBLIC_TENANT_PATHS =
-  /^\/(analytics\/track|tenants\/public\/[^/]+\/report|booking\/public\/[^/]+(\/slots|\/book)?)$/;
+  /^\/(analytics\/track|tenants\/public\/[^/]+\/report|booking\/public\/[^/]+(\/slots|\/book|\/lookup)?|booking\/manage\/[^/]+(\/cancel|\/services(\/[^/]+)?)?)$/;
 
 const WEAK_SECRETS = new Set(['troque-este-valor-em-dev', 'changeme', 'secret']);
 
@@ -52,7 +52,11 @@ async function bootstrap() {
   app.enableCors((req: { originalUrl: string; headers: { origin?: string } }, callback) => {
     const path = req.originalUrl.split('?')[0];
     if (PUBLIC_TENANT_PATHS.test(path) && isTenantOrigin(req.headers.origin)) {
-      callback(null, { origin: true, credentials: false, methods: ['GET', 'POST', 'OPTIONS'] });
+      callback(null, {
+        origin: true,
+        credentials: false,
+        methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+      });
       return;
     }
     callback(null, { origin: webUrl, credentials: true });

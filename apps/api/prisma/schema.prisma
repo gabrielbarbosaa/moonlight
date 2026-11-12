@@ -18,19 +18,19 @@ enum TenantStatus {
 }
 
 model User {
-  id            String     @id @default(uuid()) @db.Uuid
-  email         String     @unique
+  id            String   @id @default(uuid()) @db.Uuid
+  email         String   @unique
   passwordHash  String
-  emailVerified Boolean    @default(false)
-  role          UserRole   @default(USER)
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  emailVerified Boolean  @default(false)
+  role          UserRole @default(USER)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  tenants       Tenant[]
-  authCodes     AuthCode[]
-  auditLogs     AuditLog[]
-  subscription  Subscription?
-  mediaAssets   MediaAsset[]
+  tenants      Tenant[]
+  authCodes    AuthCode[]
+  auditLogs    AuditLog[]
+  subscription Subscription?
+  mediaAssets  MediaAsset[]
 
   @@map("users")
 }
@@ -46,7 +46,7 @@ model MediaAsset {
   height      Int
   createdAt   DateTime @default(now())
 
-  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([ownerId, createdAt])
   @@map("media_assets")
@@ -74,7 +74,7 @@ model Subscription {
   createdAt              DateTime           @default(now())
   updatedAt              DateTime           @updatedAt
 
-  user                   User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("subscriptions")
 }
@@ -100,33 +100,34 @@ model AuthCode {
   consumedAt DateTime?
   createdAt  DateTime  @default(now())
 
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, createdAt])
   @@map("auth_codes")
 }
 
 model Tenant {
-  id        String       @id @default(uuid()) @db.Uuid
-  slug      String       @unique
-  name      String
-  status    TenantStatus @default(ACTIVE)
+  id              String       @id @default(uuid()) @db.Uuid
+  slug            String       @unique
+  name            String
+  status          TenantStatus @default(ACTIVE)
   suspendedReason String?
   suspendedAt     DateTime?
-  ownerId   String       @db.Uuid
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  ownerId         String       @db.Uuid
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
 
-  owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner     User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   page      Page?
   analytics AnalyticsDaily[]
   reports   TenantReport[]
 
-  bookingEnabled Boolean @default(false)
-  timezone       String  @default("America/Sao_Paulo")
-  bookingServices BookingService[]
-  availability    AvailabilityRule[]
-  bookings        Booking[]
+  bookingEnabled    Boolean            @default(false)
+  timezone          String             @default("America/Sao_Paulo")
+  cancelNoticeHours Int                @default(2)
+  bookingServices   BookingService[]
+  availability      AvailabilityRule[]
+  bookings          Booking[]
 
   @@index([ownerId])
   @@index([status])
@@ -147,11 +148,33 @@ model BookingService {
   active          Boolean  @default(true)
   createdAt       DateTime @default(now())
 
-  tenant          Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  bookings        Booking[]
+  tenant   Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bookings Booking[]
+  extras   BookingExtra[]
 
   @@index([tenantId])
   @@map("booking_services")
+}
+
+enum CancelActor {
+  CUSTOMER
+  OWNER
+}
+
+/// Serviço adicional de uma reserva. Guarda nome e duração da época para o histórico não mudar.
+model BookingExtra {
+  id              String   @id @default(uuid()) @db.Uuid
+  bookingId       String   @db.Uuid
+  serviceId       String   @db.Uuid
+  name            String
+  durationMinutes Int
+  createdAt       DateTime @default(now())
+
+  booking Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  service BookingService @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  @@index([bookingId])
+  @@map("booking_extras")
 }
 
 /// Janela semanal de atendimento, em minutos desde 00:00 no fuso do tenant.
@@ -162,7 +185,7 @@ model AvailabilityRule {
   startMinute Int
   endMinute   Int
 
-  tenant      Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId, weekday])
   @@map("availability_rules")
@@ -170,19 +193,23 @@ model AvailabilityRule {
 
 /// Reserva. A exclusion constraint (na migration) impede sobreposição por tenant.
 model Booking {
-  id            String        @id @default(uuid()) @db.Uuid
-  tenantId      String        @db.Uuid
-  serviceId     String        @db.Uuid
-  startsAt      DateTime      @db.Timestamptz(3)
-  endsAt        DateTime      @db.Timestamptz(3)
-  customerName  String
-  customerEmail String
-  notes         String?
-  status        BookingStatus @default(CONFIRMED)
-  createdAt     DateTime      @default(now())
+  id              String        @id @default(uuid()) @db.Uuid
+  tenantId        String        @db.Uuid
+  serviceId       String        @db.Uuid
+  startsAt        DateTime      @db.Timestamptz(3)
+  endsAt          DateTime      @db.Timestamptz(3)
+  customerName    String
+  customerEmail   String
+  notes           String?
+  status          BookingStatus @default(CONFIRMED)
+  manageTokenHash String?       @unique
+  cancelledAt     DateTime?
+  cancelledBy     CancelActor?
+  createdAt       DateTime      @default(now())
 
-  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  service       BookingService @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  tenant  Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  service BookingService @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+  extras  BookingExtra[]
 
   @@index([tenantId, startsAt])
   @@map("bookings")
@@ -205,7 +232,7 @@ model TenantReport {
   resolvedById String?      @db.Uuid
   createdAt    DateTime     @default(now())
 
-  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([status, createdAt])
   @@index([tenantId])
@@ -222,7 +249,7 @@ model AuditLog {
   metadata   Json     @default("{}")
   createdAt  DateTime @default(now())
 
-  actor      User?    @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  actor User? @relation(fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([createdAt])
   @@map("audit_logs")
@@ -237,7 +264,7 @@ model AnalyticsDaily {
   uniqueVisitors Int      @default(0)
   clicks         Json     @default("{}")
 
-  tenant         Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@unique([tenantId, date])
   @@map("analytics_daily")
@@ -245,16 +272,16 @@ model AnalyticsDaily {
 
 /// A página do tenant: rascunho e versão publicada em JSONB.
 model Page {
-  id            String        @id @default(uuid()) @db.Uuid
-  tenantId      String        @unique @db.Uuid
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @unique @db.Uuid
   draft         Json
   published     Json?
-  schemaVersion Int           @default(1)
+  schemaVersion Int       @default(1)
   publishedAt   DateTime?
-  updatedAt     DateTime      @updatedAt
+  updatedAt     DateTime  @updatedAt
 
-  tenant        Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  versions      PageVersion[]
+  tenant   Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  versions PageVersion[]
 
   @@map("pages")
 }
@@ -267,7 +294,7 @@ model PageVersion {
   schemaVersion Int
   createdAt     DateTime @default(now())
 
-  page          Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
 
   @@index([pageId, createdAt])
   @@map("page_versions")
