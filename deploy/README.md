@@ -1,93 +1,218 @@
-# Deploy: API na VPS e front na Vercel
+# Deploy: Moonlight em uma VPS com vários projetos
 
-Arquitetura:
+Guia para uma VPS zerada (sem Node, Docker ou Git) que vai hospedar **vários projetos**, sendo o Moonlight um deles.
+
+## Como a VPS fica organizada
+
+Só **um** processo pode usar as portas 80 e 443. Por isso a VPS tem um **proxy único** (Caddy), e cada projeto fica em sua própria pasta, com seu próprio `docker compose`, **sem publicar portas**. O proxy e os projetos conversam por uma rede Docker compartilhada chamada `proxy`.
 
 ```
-seudominio.com           -> Vercel (Next.js: landing, /admin)
-*.seudominio.com         -> Vercel (páginas dos usuários, reescritas pelo middleware)
-api.seudominio.com       -> VPS (Caddy -> API NestJS -> Postgres e Redis)
+internet :80/:443
+      |
+   [ proxy: Caddy ]  ~/proxy              (HTTPS automático de todos os projetos)
+      |  rede Docker "proxy"
+      |-- moonlight-web, moonlight-api    ~/apps/moonlight    (+ postgres e redis privados)
+      |-- outro-projeto-...               ~/apps/outro-projeto
+      '-- ...
 ```
 
-O front e a API precisam ficar sob o **mesmo domínio raiz**. Assim o cookie de sessão (host-only na API, `Secure`, `SameSite=Lax`) é enviado nas chamadas do painel.
+Regras que valem para todo projeto da VPS:
 
-Na VPS rodam quatro containers: `caddy` (HTTPS automático, únicas portas abertas: 80 e 443), `api`, `postgres` e `redis`. Postgres e Redis não ficam expostos.
+- Não publica `ports:` para a internet (só o proxy publica).
+- Entra na rede externa `proxy` apenas com os serviços que recebem tráfego web.
+- Usa nomes de serviço **únicos** (`moonlight-api`, `moonlight-web`, não `api` nem `web`), porque a rede `proxy` é compartilhada e nomes iguais de projetos diferentes se misturam.
+- Banco e cache ficam só na rede interna do próprio projeto, sem se ligar à rede `proxy`.
+- Cada projeto tem seu `.env`, seus volumes e seu domínio. O trecho de roteamento dele fica em `~/proxy/sites/<projeto>.caddy`.
+
+O Moonlight serve três endereços: `seudominio.com` (landing e `/admin`), `api.seudominio.com` (API) e `*.seudominio.com` (páginas dos usuários, como `maria.seudominio.com`). O Caddy emite o certificado de cada subdomínio de usuário no primeiro acesso, e só para páginas que existem (a API confirma em `/tenants/domain-check`), então não precisa de certificado wildcard.
+
+> Use um domínio (ou subdomínio) **dedicado** ao Moonlight, como `moonlight.com.br`. O wildcard `*.dominio` captura qualquer subdomínio que não tenha um site próprio no proxy.
+
+## O que você precisa antes
+
+- Uma VPS **Ubuntu 22.04 ou 24.04** com acesso `root` por SSH. Para vários projetos, prefira 4 GB de RAM ou mais (mínimo 2 GB, com swap) e disco de sobra.
+- Um **domínio** com acesso ao painel de DNS.
+- Uma conta de **e-mail SMTP** (Brevo, Resend, Mailgun, SES ou Gmail com senha de app) para o código de 2FA e os avisos de reserva. Sem isso ninguém consegue entrar.
 
 ## 1. DNS
 
-Crie estes registros no seu provedor de DNS:
+No painel de DNS do domínio do Moonlight, crie três registros apontando para o **IP da VPS**:
 
-| Tipo      | Nome       | Valor                                     |
-| --------- | ---------- | ----------------------------------------- |
-| A         | `api`      | IP público da VPS                         |
-| A / CNAME | raiz e `*` | os valores que a Vercel mostrar (passo 4) |
+| Tipo | Nome  | Valor     |
+| ---- | ----- | --------- |
+| A    | `@`   | IP da VPS |
+| A    | `*`   | IP da VPS |
+| A    | `api` | IP da VPS |
 
-Os subdomínios dos usuários (`maria.seudominio.com`) exigem um domínio **wildcard** na Vercel, que só funciona usando os nameservers da Vercel para o domínio. Nesse caso, crie o registro `api` dentro do painel de DNS da Vercel. Sem wildcard, as páginas continuam acessíveis por `seudominio.com/s/maria`.
+O `*` faz `maria.seudominio.com` funcionar. Sem wildcard, as páginas continuam em `seudominio.com/s/maria`. Confira com `ping api.seudominio.com` (deve mostrar o IP da VPS; a propagação pode levar de minutos a horas).
 
-## 2. VPS
+## 2. Primeiro acesso à VPS
 
-Requisitos: Linux com 2 GB de RAM ou mais (o build da imagem usa memória), Docker com o plugin Compose e as portas 80 e 443 liberadas.
+No seu computador:
+
+```bash
+ssh root@IP_DA_VPS
+```
+
+Na VPS, atualize o sistema e crie um usuário próprio:
+
+```bash
+apt update && apt upgrade -y
+adduser deploy
+usermod -aG sudo deploy
+```
+
+Crie um swap de 2 GB (protege os builds contra falta de memória):
+
+```bash
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+echo '/swapfile none swap sw 0 0' >> /etc/fstab
+```
+
+Firewall, abrindo só o necessário:
+
+```bash
+ufw allow OpenSSH
+ufw allow 80
+ufw allow 443
+ufw --force enable
+```
+
+## 3. Instalar Docker e Git
 
 ```bash
 curl -fsSL https://get.docker.com | sh
-sudo ufw allow 22 && sudo ufw allow 80 && sudo ufw allow 443 && sudo ufw enable
-git clone <URL-DO-SEU-REPOSITORIO> moonlight
+apt install -y git
+usermod -aG docker deploy
+su - deploy
+docker --version && docker compose version && git --version
+```
+
+## 4. Baixar o Moonlight
+
+```bash
+mkdir -p ~/apps && cd ~/apps
+git clone https://github.com/gabrielbarbosaa/moonlight.git
 cd moonlight/deploy
-cp .env.production.example .env
-chmod 600 .env
 ```
 
-Edite o `.env`:
+Se o repositório for privado, o GitHub não aceita senha: crie um _Personal Access Token_ (GitHub > Settings > Developer settings > Tokens, com leitura do repositório) e use-o como senha no `git clone`.
 
-- `ROOT_DOMAIN`, `WEB_URL` e `API_DOMAIN` com o seu domínio.
-- Senhas e segredos: gere cada um com `openssl rand -hex 32`. A API se recusa a iniciar em produção se `SESSION_SECRET` ou `BILLING_WEBHOOK_SECRET` tiverem menos de 32 caracteres.
-- `SMTP_*` com um provedor real. Sem isso ninguém recebe o código de 2FA.
-- `SUPERADMIN_EMAILS` com o seu e-mail.
+## 5. Proxy da VPS (uma vez só)
 
-Suba tudo:
+O proxy é infraestrutura da VPS, não do Moonlight. Copie o modelo e suba:
 
 ```bash
+mkdir -p ~/proxy
+cp -r ~/apps/moonlight/deploy/vps-proxy/. ~/proxy/
+cd ~/proxy
+docker compose up -d
+```
+
+Isso cria a rede `proxy` e passa a escutar as portas 80 e 443. Ainda não há nenhum site; eles entram na pasta `~/proxy/sites/`.
+
+## 6. Configurar o `.env` do Moonlight
+
+```bash
+cd ~/apps/moonlight/deploy
+chmod +x init-env.sh backup.sh
+./init-env.sh
+nano .env
+```
+
+O script pergunta o domínio e o seu e-mail, gera todas as senhas e segredos e cria o `moonlight.caddy` (o trecho de roteamento deste projeto). No `nano`, preencha só o bloco de e-mail (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`). Salve com `Ctrl+O`, `Enter` e saia com `Ctrl+X`.
+
+O `.env` guarda segredos e já está no `.gitignore`.
+
+## 7. Subir o Moonlight
+
+```bash
+cd ~/apps/moonlight/deploy
 docker compose up -d --build
+```
+
+O primeiro build leva de 5 a 15 minutos. Acompanhe com `docker compose ps` e `docker compose logs -f moonlight-api`. A API aplica as migrations sozinha na primeira inicialização. Em projetos diferentes, faça os builds **um de cada vez** para não faltar memória.
+
+## 8. Publicar no proxy
+
+```bash
+cp ~/apps/moonlight/deploy/moonlight.caddy ~/proxy/sites/
+cd ~/proxy
+docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+```
+
+Pronto, sem derrubar nada:
+
+- `https://api.seudominio.com/health` responde `{"status":"ok","database":"up"}`.
+- `https://seudominio.com` abre a landing.
+
+## 9. Primeiro uso
+
+1. Acesse `https://seudominio.com/admin/login` e crie uma conta **com o e-mail informado no passo 6**. O código de 2FA chega por e-mail e, ao confirmá-lo, a conta vira superadmin (`/admin/backoffice`).
+2. Crie uma página (ex.: `maria`) e abra `https://maria.seudominio.com`. O primeiro acesso demora um instante, porque o certificado é emitido ali.
+
+## Adicionar outro projeto à VPS
+
+1. Crie `~/apps/outro-projeto` com o `docker-compose.yml` dele, seguindo as regras do início deste guia. O esqueleto:
+
+```yaml
+services:
+  outro-web:
+    build: .
+    restart: unless-stopped
+    networks:
+      - default
+      - proxy
+
+networks:
+  proxy:
+    external: true
+```
+
+2. Crie `~/proxy/sites/outro-projeto.caddy`:
+
+```
+outro.com.br {
+	encode gzip
+	reverse_proxy outro-web:3000
+}
+```
+
+3. Suba o projeto (`docker compose up -d --build`) e recarregue o proxy com o comando do passo 8.
+
+Limitação: o Caddy aceita uma única URL de verificação (`ask`) para certificados sob demanda, e ela aponta para o Moonlight. Outros projetos funcionam normalmente com certificados comuns; só não configure `on_demand` neles.
+
+## Operação do dia a dia
+
+Atualizar o Moonlight:
+
+```bash
+cd ~/apps/moonlight && git pull && cd deploy && docker compose up -d --build
+```
+
+Logs e estado:
+
+```bash
 docker compose ps
-docker compose logs -f api
+docker compose logs -f --tail=100 moonlight-api
+docker compose logs -f --tail=100 moonlight-web
+cd ~/proxy && docker compose logs -f --tail=100 caddy
 ```
 
-Na primeira inicialização a API aplica as migrations sozinha (`prisma migrate deploy`). Teste: `https://api.seudominio.com/health` deve responder `{"status":"ok","database":"up"}`.
+Reiniciar um serviço: `docker compose restart moonlight-api`. Parar o projeto sem perder dados: `docker compose down` (nunca use `-v`, que apaga os volumes). Liberar espaço de builds antigos: `docker image prune -f`.
 
-## 3. Front na Vercel
+### Backup
 
-1. Importe o repositório na Vercel.
-2. **Root Directory:** `apps/web`, com "Include source files outside of the Root Directory" ligado. O `apps/web/vercel.json` já define a instalação e o build pela raiz do monorepo.
-3. Variáveis de ambiente (Production):
-
-| Variável                  | Valor                        |
-| ------------------------- | ---------------------------- |
-| `NEXT_PUBLIC_API_URL`     | `https://api.seudominio.com` |
-| `API_URL`                 | `https://api.seudominio.com` |
-| `ROOT_DOMAIN`             | `seudominio.com`             |
-| `NEXT_PUBLIC_ROOT_DOMAIN` | `seudominio.com`             |
-
-As variáveis `NEXT_PUBLIC_*` entram no build: depois de alterá-las, faça um novo deploy.
-
-## 4. Domínios na Vercel
-
-Em Settings > Domains, adicione `seudominio.com` e `*.seudominio.com` e siga as instruções de DNS que a Vercel mostrar.
-
-## Operação
-
-Atualizar a API:
+O `backup.sh` guarda o Postgres e as imagens enviadas em `deploy/backups`, por 14 dias. Agende para as 03:00:
 
 ```bash
-cd moonlight && git pull && cd deploy && docker compose up -d --build
+(crontab -l 2>/dev/null; echo "0 3 * * * $HOME/apps/moonlight/deploy/backup.sh") | crontab -
 ```
 
-Backup do Postgres e das imagens enviadas (volume `media`; guarda 14 dias em `deploy/backups`), agendado todo dia às 03:00:
-
-```bash
-chmod +x backup.sh
-(crontab -l 2>/dev/null; echo "0 3 * * * $PWD/backup.sh") | crontab -
-```
-
-Restaurar um backup:
+Copie os backups também para fora da VPS (`scp` ou `rclone`). Restaurar o banco:
 
 ```bash
 gunzip -c backups/ARQUIVO.sql.gz | docker compose exec -T postgres sh -c 'psql -U "$POSTGRES_USER" "$POSTGRES_DB"'
@@ -96,16 +221,22 @@ gunzip -c backups/ARQUIVO.sql.gz | docker compose exec -T postgres sh -c 'psql -
 Restaurar as imagens:
 
 ```bash
-docker compose exec -T api tar -C /data/media -xzf - < backups/ARQUIVO-media.tar.gz
+docker compose exec -T moonlight-api tar -C /data/media -xzf - < backups/ARQUIVO-media.tar.gz
 ```
-
-Copie também os backups para fora da VPS. As imagens ficam no volume `media` da API e são entregues por `https://api.seudominio.com/media/files/...`; garanta que `API_URL` no `deploy/.env` seja esse endereço público.
 
 ## Problemas comuns
 
-- **502 ou o Caddy não emite o certificado:** confira se o DNS de `api` aponta para a VPS e se as portas 80 e 443 estão abertas. Veja `docker compose logs caddy`.
+- **`network proxy declared as external, but could not be found`:** o proxy ainda não foi criado. Faça o passo 5 antes de subir o projeto.
+- **Build do front termina com `Killed`:** falta de memória. Confira o swap (`free -h`), pare outros builds e tente de novo.
+- **O Caddy não emite o certificado:** confira o DNS, as portas 80 e 443 (`ufw status`) e `docker compose logs caddy` dentro de `~/proxy`.
+- **Subdomínio de uma página com erro de certificado:** só recebe certificado se a página existir e estiver ativa, e se o registro DNS `*` existir.
+- **Erro 502:** o projeto não está de pé ou o nome do serviço no `.caddy` não bate com o do compose. Veja `docker compose ps`.
 - **Erro de CORS no painel:** `WEB_URL` deve ser exatamente a origem do front, com `https://` e sem barra no final.
-- **Login não mantém a sessão:** o front e a API precisam estar sob o mesmo domínio raiz.
-- **Código de 2FA não chega:** veja `docker compose logs api` e as variáveis `SMTP_*`.
+- **Login não mantém a sessão:** front e API precisam estar sob o mesmo domínio raiz (é o caso: `seudominio.com` e `api.seudominio.com`).
+- **Código de 2FA não chega:** veja `docker compose logs moonlight-api` e as variáveis `SMTP_*`.
+- **Mudou o domínio no `.env`:** as variáveis `NEXT_PUBLIC_*` entram no build, então rode `docker compose up -d --build` de novo e atualize o `moonlight.caddy`.
 - **Checkout responde 404:** com `BILLING_SANDBOX_ENABLED=false` o checkout simulado fica desligado. O único provedor de pagamento hoje é o sandbox, que não cobra de verdade.
-- **Primeiro superadmin:** crie uma conta com o e-mail listado em `SUPERADMIN_EMAILS` e confirme o código de 2FA. O papel é aplicado nessa confirmação.
+
+## Front na Vercel (alternativa)
+
+O front também pode ficar na Vercel, com a VPS só para a API: o `apps/web/vercel.json` já existe para isso. Suba apenas a API (`docker compose up -d --build moonlight-api`), deixe no `moonlight.caddy` somente o bloco `api.`, e configure na Vercel: Root Directory `apps/web` (com "Include source files outside of the Root Directory"), as variáveis `NEXT_PUBLIC_API_URL`, `API_URL` (`https://api.seudominio.com`), `ROOT_DOMAIN` e `NEXT_PUBLIC_ROOT_DOMAIN` (`seudominio.com`) e os domínios `seudominio.com` e `*.seudominio.com`.

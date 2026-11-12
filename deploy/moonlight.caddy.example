@@ -1,0 +1,17 @@
+api.seudominio.com {
+	encode gzip
+	reverse_proxy moonlight-api:4000
+}
+
+seudominio.com {
+	encode gzip
+	reverse_proxy moonlight-web:3000
+}
+
+*.seudominio.com {
+	tls {
+		on_demand
+	}
+	encode gzip
+	reverse_proxy moonlight-web:3000
+}

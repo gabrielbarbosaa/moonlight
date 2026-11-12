@@ -11,6 +11,7 @@ import {
   entitlementsFor,
   pageSchema,
   resolvePlan,
+  slugSchema,
   starterPage,
   type CreateReportInput,
   type CreateTenantInput,
@@ -99,6 +100,21 @@ export class TenantsService {
   async isSlugAvailable(slug: string) {
     const existing = await this.prisma.tenant.findUnique({ where: { slug }, select: { id: true } });
     return { slug, available: !existing };
+  }
+
+  async assertKnownDomain(domain: string) {
+    const root = (process.env.ROOT_DOMAIN ?? '').toLowerCase();
+    const host = domain.toLowerCase();
+    if (!root || !host.endsWith(`.${root}`)) throw new NotFoundException();
+
+    const slug = slugSchema.safeParse(host.slice(0, -root.length - 1));
+    if (!slug.success) throw new NotFoundException();
+
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { slug: slug.data },
+      select: { status: true },
+    });
+    if (!tenant || tenant.status !== 'ACTIVE') throw new NotFoundException();
   }
 
   async findPublic(slug: string) {

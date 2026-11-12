@@ -30,7 +30,7 @@ services:
       timeout: 3s
       retries: 10
 
-  api:
+  moonlight-api:
     build:
       context: ..
       dockerfile: apps/api/Dockerfile
@@ -50,26 +50,35 @@ services:
       MEDIA_DIR: /data/media
     volumes:
       - media:/data/media
+    networks:
+      - default
+      - proxy
 
-  caddy:
-    image: caddy:2-alpine
+  moonlight-web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${API_URL}
+        NEXT_PUBLIC_ROOT_DOMAIN: ${ROOT_DOMAIN}
+        ROOT_DOMAIN: ${ROOT_DOMAIN}
+    image: moonlight-web:latest
     restart: unless-stopped
     depends_on:
-      api:
+      moonlight-api:
         condition: service_healthy
-    ports:
-      - '80:80'
-      - '443:443'
     environment:
-      API_DOMAIN: ${API_DOMAIN}
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
+      API_URL: http://moonlight-api:4000
+      ROOT_DOMAIN: ${ROOT_DOMAIN}
+    networks:
+      - default
+      - proxy
+
+networks:
+  proxy:
+    external: true
 
 volumes:
   pgdata:
   redisdata:
   media:
-  caddy_data:
-  caddy_config:

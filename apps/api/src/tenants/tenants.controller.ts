@@ -13,7 +13,13 @@ import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { Request } from 'express';
 import { AuthenticatedRequest, SessionGuard } from '../auth/session.guard';
 import { SESSION_COOKIE } from '../auth/session.service';
-import { CreateReportDto, CreateTenantDto, SlugParamDto, SlugQueryDto } from './tenants.dto';
+import {
+  CreateReportDto,
+  CreateTenantDto,
+  DomainQueryDto,
+  SlugParamDto,
+  SlugQueryDto,
+} from './tenants.dto';
 import { TenantsService } from './tenants.service';
 
 @ApiTags('tenants')
@@ -41,6 +47,13 @@ export class TenantsController {
   @ApiOperation({ summary: 'Informa se um endereço (slug) está livre' })
   slugAvailable(@Query() query: SlugQueryDto) {
     return this.tenants.isSlugAvailable(query.slug);
+  }
+
+  @Get('domain-check')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Autoriza o certificado HTTPS de um subdomínio de tenant ativo' })
+  async domainCheck(@Query() query: DomainQueryDto) {
+    await this.tenants.assertKnownDomain(query.domain);
   }
 
   @Post('public/:slug/report')

@@ -10,3 +10,5 @@ coverage
 *.tsbuildinfo
 backups/
 storage/
+deploy/backups/
+deploy/moonlight.caddy

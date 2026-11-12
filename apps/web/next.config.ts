@@ -1,8 +1,14 @@
+import path from 'node:path';
 import type { NextConfig } from 'next';
+
+const docker = process.env.DOCKER_BUILD === 'true';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // O pacote de schemas é compilado para CommonJS, então não precisa de transpilação.
+  ...(docker && {
+    output: 'standalone',
+    outputFileTracingRoot: path.join(__dirname, '../..'),
+  }),
 };
 
 export default nextConfig;
