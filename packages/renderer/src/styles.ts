@@ -108,14 +108,17 @@ export const RENDERER_STYLES = `
 .sbp-carousel-nav[data-side="prev"]{left:10px}
 .sbp-carousel-nav[data-side="next"]{right:10px}
 
-.sbp-gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:0;padding:0;list-style:none}
+.sbp-gallery-grid{display:grid;grid-template-columns:repeat(var(--cols,3),minmax(0,1fr));gap:10px;margin:0;padding:0;list-style:none}
+@container (max-width:520px){.sbp-gallery-grid{grid-template-columns:repeat(var(--cols-s,2),minmax(0,1fr))}}
 .sbp-gallery-grid li{min-width:0}
 .sbp-gallery-grid a{display:block}
 .sbp-gallery-grid img{display:block;width:100%;aspect-ratio:1;object-fit:cover;border-radius:var(--sb-radius)}
 .sbp-gallery[data-variant="columns"] .sbp-gallery-grid{display:block;column-width:200px;column-gap:10px}
 .sbp-gallery[data-variant="columns"] .sbp-gallery-grid li{margin-bottom:10px;break-inside:avoid}
 .sbp-gallery[data-variant="columns"] .sbp-gallery-grid img{aspect-ratio:auto;height:auto}
-.sbp-gallery[data-variant="featured"] .sbp-gallery-grid li:first-child{grid-column:span 2;grid-row:span 2}
+.sbp-gallery[data-single="true"] .sbp-gallery-grid img{aspect-ratio:16/9}
+.sbp-gallery[data-variant="featured"] .sbp-gallery-grid li:first-child{grid-column:1/-1}
+.sbp-gallery[data-variant="featured"] .sbp-gallery-grid li:first-child img{aspect-ratio:2/1}
 
 .sbp-faq-item{border-bottom:1px solid color-mix(in srgb,var(--sb-text) 16%,transparent)}
 .sbp-faq-q{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 2px;font-size:1rem;font-weight:600;cursor:pointer;list-style:none}

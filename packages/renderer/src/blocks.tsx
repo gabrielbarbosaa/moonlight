@@ -330,6 +330,12 @@ function CarouselBlock({ block, options }: { block: BlockOf<'carousel'>; options
   );
 }
 
+function galleryColumns(count: number): [number, number] {
+  const wide = count <= 5 ? count : count === 9 ? 3 : count === 10 ? 5 : count <= 6 ? 3 : 4;
+  const narrow = count <= 2 ? count : count === 4 || count === 8 ? 2 : 3;
+  return [Math.max(wide, 1), Math.max(narrow, 1)];
+}
+
 function GalleryBlock({ block, options }: { block: BlockOf<'gallery'>; options: RenderOptions }) {
   const tiles = block.props.items.flatMap((item) => {
     const src = safeHref(item.imageUrl) ?? options.fallbackImage;
@@ -337,10 +343,19 @@ function GalleryBlock({ block, options }: { block: BlockOf<'gallery'>; options: 
   });
   if (tiles.length === 0) return null;
 
+  const variant = block.variant === 'featured' && tiles.length < 3 ? 'grid' : block.variant;
+  const gridCount = variant === 'featured' ? tiles.length - 1 : tiles.length;
+  const [wide, narrow] = galleryColumns(gridCount);
+  const columns = { '--cols': wide, '--cols-s': narrow } as CSSProperties;
+
   return (
-    <section className="sbp-block sbp-gallery" data-variant={block.variant}>
+    <section
+      className="sbp-block sbp-gallery"
+      data-variant={variant}
+      data-single={tiles.length === 1 ? 'true' : undefined}
+    >
       <SectionTitle title={block.props.title} />
-      <ul className="sbp-gallery-grid">
+      <ul className="sbp-gallery-grid" style={columns}>
         {tiles.map(({ item, src, full }) => {
           const image = <img src={src} alt={item.caption ?? ''} loading="lazy" />;
           return (
