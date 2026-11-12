@@ -106,6 +106,7 @@ export class TenantsService {
     const root = (process.env.ROOT_DOMAIN ?? '').toLowerCase();
     const host = domain.toLowerCase();
     if (!root || !host.endsWith(`.${root}`)) throw new NotFoundException();
+    if (host === `api.${root}`) return;
 
     const slug = slugSchema.safeParse(host.slice(0, -root.length - 1));
     if (!slug.success) throw new NotFoundException();
